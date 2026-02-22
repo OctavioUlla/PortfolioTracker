@@ -31,7 +31,7 @@ jobs:
           echo "tag=v$VERSION" >> $GITHUB_OUTPUT
 
       - name: Restore dependencies
-        run: dotnet restore
+        run: dotnet restore --runtime win-x64
 
       - name: Build
         run: dotnet build --configuration Release --no-restore
