@@ -1,0 +1,35 @@
+@model PortfolioTracker.Models.Broker
+@{
+    ViewData["Title"] = "Edit Broker";
+}
+
+<div class="mb-3">
+    <a asp-action="Index" class="btn btn-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i>Back to Brokers
+    </a>
+</div>
+
+<div class="form-card">
+    <h5 class="fw-semibold mb-4">Edit Broker</h5>
+    <form asp-action="Edit" method="post">
+        <input type="hidden" asp-for="Id" />
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2" style="font-size:0.85rem;"></div>
+
+        <div class="mb-3">
+            <label asp-for="Name" class="form-label">Broker Name</label>
+            <input asp-for="Name" class="form-control" />
+            <span asp-validation-for="Name" class="text-danger small"></span>
+        </div>
+
+        <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save me-2"></i>Save Changes
+            </button>
+            <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

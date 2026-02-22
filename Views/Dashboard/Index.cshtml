@@ -1,0 +1,314 @@
+@model PortfolioTracker.Models.DashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+    var sp500 = Model.SP500VirtualPortfolio;
+    var hasData = Model.MonthlyBalances.Any();
+    var years = Model.CashTransactions.Select(t => t.Date.Year).Distinct().OrderByDescending(y => y).ToList();
+}
+
+<!-- Summary Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-start justify-content-between">
+                <div>
+                    <div class="stat-card-label">Portfolio Value</div>
+                    <div class="stat-card-value">@Model.TotalCurrentBalance.ToString("C0")</div>
+                    <div class="stat-card-sub">Latest monthly balance</div>
+                </div>
+                <div class="stat-card-icon" style="background:#ede9fe;">
+                    <i class="fas fa-wallet" style="color:#7c3aed;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-start justify-content-between">
+                <div>
+                    <div class="stat-card-label">Lifetime IRR</div>
+                    <div class="stat-card-value @(Model.LifetimeIRR >= 0 ? "positive" : "negative")">
+                        @Model.LifetimeIRR.ToString("F2")%
+                    </div>
+                    <div class="stat-card-sub">Annualized return (XIRR)</div>
+                </div>
+                <div class="stat-card-icon" style="background:#dcfce7;">
+                    <i class="fas fa-percent" style="color:#15803d;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-start justify-content-between">
+                <div>
+                    <div class="stat-card-label">S&amp;P 500 Virtual Value</div>
+                    <div class="stat-card-value">@sp500.CurrentValue.ToString("C0")</div>
+                    <div class="stat-card-sub @(sp500.TotalReturnPercent >= 0 ? "positive" : "negative")">
+                        @(sp500.TotalReturnPercent >= 0 ? "+" : "")@sp500.TotalReturnPercent.ToString("F1")% total return
+                    </div>
+                </div>
+                <div class="stat-card-icon" style="background:#fef3c7;">
+                    <i class="fas fa-chart-bar" style="color:#b45309;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-start justify-content-between">
+                <div>
+                    <div class="stat-card-label">Total Deposits</div>
+                    <div class="stat-card-value">
+                        @Model.CashTransactions.Where(t => t.Type == PortfolioTracker.Models.TransactionType.Deposit).Sum(t => t.Amount).ToString("C0")
+                    </div>
+                    <div class="stat-card-sub">@Model.CashTransactions.Count(t => t.Type == PortfolioTracker.Models.TransactionType.Deposit) deposit(s)</div>
+                </div>
+                <div class="stat-card-icon" style="background:#dbeafe;">
+                    <i class="fas fa-arrow-down-to-line" style="color:#1d4ed8;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart Row -->
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="chart-card">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h6 class="chart-card-title mb-0">Portfolio Value vs S&amp;P 500 Virtual Portfolio</h6>
+                <div class="d-flex gap-3" style="font-size:0.8rem;">
+                    <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#6366f1;margin-right:4px;"></span>Portfolio</span>
+                    <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#f59e0b;margin-right:4px;"></span>S&amp;P 500 Virtual</span>
+                </div>
+            </div>
+            @if (hasData)
+            {
+                <canvas id="portfolioChart" height="100"></canvas>
+            }
+            else
+            {
+                <div class="text-center py-5 text-muted">
+                    <i class="fas fa-chart-line fa-3x mb-3 opacity-25"></i>
+                    <p>No monthly balance data yet. <a asp-controller="MonthlyBalances" asp-action="Create">Add your first balance</a>.</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- IRR Calculator + Recent Transactions -->
+<div class="row g-3">
+    <div class="col-lg-5">
+        <div class="chart-card h-100">
+            <h6 class="chart-card-title">IRR Calculator</h6>
+            <p class="text-muted" style="font-size:0.8rem;">Calculate the Internal Rate of Return (XIRR) for different periods.</p>
+
+            <div class="mb-3">
+                <label class="form-label">Period</label>
+                <select class="form-select" id="irrPeriod" onchange="toggleIrrFields()">
+                    <option value="lifetime">Lifetime</option>
+                    <option value="year">By Year</option>
+                    <option value="custom">Custom Range</option>
+                </select>
+            </div>
+
+            <div id="irrYearField" class="mb-3 d-none">
+                <label class="form-label">Year</label>
+                <select class="form-select" id="irrYear">
+                    @foreach (var y in years)
+                    {
+                        <option value="@y">@y</option>
+                    }
+                    @if (!years.Any())
+                    {
+                        <option>@DateTime.Today.Year</option>
+                    }
+                </select>
+            </div>
+
+            <div id="irrCustomFields" class="d-none">
+                <div class="mb-3">
+                    <label class="form-label">Start Date</label>
+                    <input type="date" class="form-control" id="irrStart" value="@DateTime.Today.AddYears(-1).ToString("yyyy-MM-dd")" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">End Date</label>
+                    <input type="date" class="form-control" id="irrEnd" value="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                </div>
+            </div>
+
+            <button class="btn btn-primary w-100 mb-3" onclick="calculateIRR()">
+                <i class="fas fa-calculator me-2"></i>Calculate IRR
+            </button>
+
+            <div id="irrResult" class="irr-result d-none">
+                <div class="text-muted mb-1" style="font-size:0.75rem;" id="irrPeriodLabel">Lifetime</div>
+                <div class="irr-value" id="irrValueDisplay">0.00%</div>
+                <div class="text-muted mt-1" style="font-size:0.75rem;">Annualized rate of return</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        <div class="data-table">
+            <div class="data-table-header">
+                <span class="data-table-title">Recent Transactions</span>
+                <a asp-controller="Transactions" asp-action="Create" class="btn btn-primary btn-sm">
+                    <i class="fas fa-plus me-1"></i>Add
+                </a>
+            </div>
+            @if (Model.CashTransactions.Any())
+            {
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Amount</th>
+                            <th>S&amp;P 500</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var t in Model.CashTransactions.OrderByDescending(t => t.Date).Take(8))
+                        {
+                            <tr>
+                                <td>@t.Date.ToString("MMM d, yyyy")</td>
+                                <td>
+                                    @if (t.Type == PortfolioTracker.Models.TransactionType.Deposit)
+                                    {
+                                        <span class="badge-deposit">Deposit</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge-withdrawal">Withdrawal</span>
+                                    }
+                                </td>
+                                <td class="fw-semibold">@t.Amount.ToString("C2")</td>
+                                <td class="text-muted">@(t.SP500Price > 0 ? t.SP500Price.ToString("C2") : "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="text-center py-4 text-muted">
+                    <i class="fas fa-money-bill-transfer fa-2x mb-2 opacity-25"></i>
+                    <p class="mb-0">No transactions yet.</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // Chart
+    @if (hasData)
+    {
+        <text>
+    const labels = [@Html.Raw(Model.PortfolioChartLabels)];
+    const portfolioData = [@Html.Raw(Model.PortfolioChartData)];
+    const sp500Data = [@Html.Raw(string.IsNullOrEmpty(Model.SP500ChartData) ? "" : Model.SP500ChartData)];
+
+    const ctx = document.getElementById('portfolioChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Portfolio',
+                    data: portfolioData,
+                    borderColor: '#6366f1',
+                    backgroundColor: 'rgba(99,102,241,0.08)',
+                    borderWidth: 2.5,
+                    pointRadius: 3,
+                    pointHoverRadius: 5,
+                    fill: true,
+                    tension: 0.3,
+                },
+                {
+                    label: 'S&P 500 Virtual',
+                    data: sp500Data,
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245,158,11,0.06)',
+                    borderWidth: 2,
+                    pointRadius: 3,
+                    pointHoverRadius: 5,
+                    fill: true,
+                    tension: 0.3,
+                    spanGaps: true,
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => ctx.dataset.label + ': $' + ctx.parsed.y.toLocaleString('en-US', { minimumFractionDigits: 2 })
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { font: { size: 11 } }
+                },
+                y: {
+                    grid: { color: '#f1f5f9' },
+                    ticks: {
+                        font: { size: 11 },
+                        callback: v => '$' + v.toLocaleString()
+                    }
+                }
+            }
+        }
+    });
+        </text>
+    }
+
+    // IRR Calculator
+    function toggleIrrFields() {
+        const period = document.getElementById('irrPeriod').value;
+        document.getElementById('irrYearField').classList.toggle('d-none', period !== 'year');
+        document.getElementById('irrCustomFields').classList.toggle('d-none', period !== 'custom');
+    }
+
+    async function calculateIRR() {
+        const period = document.getElementById('irrPeriod').value;
+        const params = new URLSearchParams();
+
+        if (period === 'year') {
+            params.append('year', document.getElementById('irrYear').value);
+        } else if (period === 'custom') {
+            params.append('startDate', document.getElementById('irrStart').value);
+            params.append('endDate', document.getElementById('irrEnd').value);
+        }
+
+        try {
+            const resp = await fetch('/Dashboard/CalculateIRR', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: params.toString()
+            });
+            const data = await resp.json();
+            const resultEl = document.getElementById('irrResult');
+            const valueEl = document.getElementById('irrValueDisplay');
+            const periodEl = document.getElementById('irrPeriodLabel');
+
+            resultEl.classList.remove('d-none');
+            periodEl.textContent = data.period;
+            valueEl.textContent = data.irr.toFixed(2) + '%';
+            valueEl.className = 'irr-value ' + (data.irr >= 0 ? 'positive' : 'negative');
+        } catch (e) {
+            alert('Error calculating IRR: ' + e.message);
+        }
+    }
+</script>
+}

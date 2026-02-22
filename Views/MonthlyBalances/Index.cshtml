@@ -1,0 +1,66 @@
+@model IEnumerable<PortfolioTracker.Models.MonthlyBalance>
+@{
+    ViewData["Title"] = "Monthly Balances";
+    var grouped = Model.GroupBy(b => new { b.Year, b.Month })
+                       .OrderByDescending(g => g.Key.Year).ThenByDescending(g => g.Key.Month);
+}
+
+<div class="d-flex justify-content-end mb-3">
+    <a asp-action="Create" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i>Add Monthly Balance
+    </a>
+</div>
+
+<div class="data-table">
+    <div class="data-table-header">
+        <span class="data-table-title">Monthly Balances</span>
+        <span class="text-muted" style="font-size:0.8rem;">@Model.Count() entries</span>
+    </div>
+    @if (Model.Any())
+    {
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Month</th>
+                    <th>Broker</th>
+                    <th>Balance</th>
+                    <th>Total (All Brokers)</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var group in grouped)
+                {
+                    var groupItems = group.ToList();
+                    var groupTotal = groupItems.Sum(b => b.Balance);
+                    var firstRow = true;
+                    foreach (var b in groupItems)
+                    {
+                        <tr>
+                            <td>@(firstRow ? new DateTime(b.Year, b.Month, 1).ToString("MMMM yyyy") : "")</td>
+                            <td>@b.Broker?.Name</td>
+                            <td>@b.Balance.ToString("C2")</td>
+                            <td class="fw-semibold">@(firstRow ? groupTotal.ToString("C2") : "")</td>
+                            <td>
+                                <a asp-action="Edit" asp-route-id="@b.Id" class="btn btn-secondary btn-sm me-1">
+                                    <i class="fas fa-pen"></i>
+                                </a>
+                                <a asp-action="Delete" asp-route-id="@b.Id" class="btn btn-sm" style="background:#fee2e2;color:#b91c1c;border:none;">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        firstRow = false;
+                    }
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="text-center py-5 text-muted">
+            <i class="fas fa-calendar-check fa-3x mb-3 opacity-25"></i>
+            <p>No monthly balances yet. <a asp-action="Create">Add your first balance</a>.</p>
+        </div>
+    }
+</div>

@@ -1,0 +1,74 @@
+@model IEnumerable<PortfolioTracker.Models.StockTrade>
+@{
+    ViewData["Title"] = "Stock Trades";
+}
+
+<div class="d-flex justify-content-end mb-3">
+    <a asp-action="Create" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i>Add Trade
+    </a>
+</div>
+
+<div class="data-table">
+    <div class="data-table-header">
+        <span class="data-table-title">Stock Trades</span>
+        <span class="text-muted" style="font-size:0.8rem;">@Model.Count() total</span>
+    </div>
+    @if (Model.Any())
+    {
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Ticker</th>
+                    <th>Quantity</th>
+                    <th>Price</th>
+                    <th>Total</th>
+                    <th>Commission</th>
+                    <th>Broker</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var t in Model)
+                {
+                    <tr>
+                        <td>@t.Date.ToString("MMM d, yyyy")</td>
+                        <td>
+                            @if (t.Type == PortfolioTracker.Models.TradeType.Buy)
+                            {
+                                <span class="badge-buy"><i class="fas fa-arrow-down me-1"></i>Buy</span>
+                            }
+                            else
+                            {
+                                <span class="badge-sell"><i class="fas fa-arrow-up me-1"></i>Sell</span>
+                            }
+                        </td>
+                        <td class="fw-semibold">@t.Ticker.ToUpper()</td>
+                        <td>@t.Quantity.ToString("F4")</td>
+                        <td>@t.Price.ToString("C2")</td>
+                        <td class="fw-semibold">@t.TotalValue.ToString("C2")</td>
+                        <td>@(t.Commission > 0 ? t.Commission.ToString("C2") : "—")</td>
+                        <td>@t.Broker?.Name</td>
+                        <td>
+                            <a asp-action="Edit" asp-route-id="@t.Id" class="btn btn-secondary btn-sm me-1">
+                                <i class="fas fa-pen"></i>
+                            </a>
+                            <a asp-action="Delete" asp-route-id="@t.Id" class="btn btn-sm" style="background:#fee2e2;color:#b91c1c;border:none;">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="text-center py-5 text-muted">
+            <i class="fas fa-arrow-trend-up fa-3x mb-3 opacity-25"></i>
+            <p>No stock trades yet. <a asp-action="Create">Add your first trade</a>.</p>
+        </div>
+    }
+</div>

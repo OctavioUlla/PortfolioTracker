@@ -1,0 +1,42 @@
+@model PortfolioTracker.Models.StockTrade
+@{
+    ViewData["Title"] = "Delete Stock Trade";
+}
+
+<div class="mb-3">
+    <a asp-action="Index" class="btn btn-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i>Back to Trades
+    </a>
+</div>
+
+<div class="form-card">
+    <h5 class="fw-semibold mb-2">Delete Stock Trade</h5>
+    <p class="text-muted mb-4">Are you sure you want to delete this trade?</p>
+
+    <dl class="row" style="font-size:0.875rem;">
+        <dt class="col-sm-4 text-muted">Date</dt>
+        <dd class="col-sm-8">@Model.Date.ToString("MMMM d, yyyy")</dd>
+        <dt class="col-sm-4 text-muted">Type</dt>
+        <dd class="col-sm-8">@Model.Type</dd>
+        <dt class="col-sm-4 text-muted">Ticker</dt>
+        <dd class="col-sm-8 fw-semibold">@Model.Ticker.ToUpper()</dd>
+        <dt class="col-sm-4 text-muted">Quantity</dt>
+        <dd class="col-sm-8">@Model.Quantity.ToString("F4")</dd>
+        <dt class="col-sm-4 text-muted">Price</dt>
+        <dd class="col-sm-8">@Model.Price.ToString("C2")</dd>
+        <dt class="col-sm-4 text-muted">Total Value</dt>
+        <dd class="col-sm-8 fw-semibold">@Model.TotalValue.ToString("C2")</dd>
+        <dt class="col-sm-4 text-muted">Broker</dt>
+        <dd class="col-sm-8">@Model.Broker?.Name</dd>
+    </dl>
+
+    <form asp-action="Delete" method="post">
+        <input type="hidden" asp-for="Id" />
+        <div class="d-flex gap-2 mt-3">
+            <button type="submit" class="btn btn-sm" style="background:#fee2e2;color:#b91c1c;border:1px solid #fecaca;">
+                <i class="fas fa-trash me-2"></i>Delete
+            </button>
+            <a asp-action="Index" class="btn btn-secondary btn-sm">Cancel</a>
+        </div>
+    </form>
+</div>
