@@ -69,12 +69,26 @@ PortfolioTracker/
 
 ---
 
+## Download
+
+The latest Windows release is available on the [Releases](https://github.com/OctavioUlla/PortfolioTracker/releases/latest) page.
+
+1. Download `portfolio-tracker-*-win-x64.zip` from the latest release.
+2. Extract the zip.
+3. Run `PortfolioTracker.exe`.
+4. The app opens at `http://localhost:5285`. The SQLite database is created automatically.
+
+---
+
 ## CD Pipeline
 
-The repository includes a GitHub Actions workflow (`.github/workflows/cd.yml`) that:
+The repository includes a GitHub Actions workflow (`.github/workflows/cd.yml`) that triggers on every push to `main` (and supports manual dispatch via `workflow_dispatch`):
 
-1. Builds and tests the application on every push to `main`.
-2. Publishes a self-contained release artifact.
-3. Uploads the artifact to GitHub Actions for download.
+1. Reads the version number from `<Version>` in `PortfolioTracker.csproj`.
+2. Builds in Release mode.
+3. Publishes a self-contained single-file Windows executable (`win-x64`).
+4. Creates a GitHub Release tagged `v{version}` with the zipped `.exe` attached — releases never expire.
+
+To publish a new version, bump `<Version>` in `PortfolioTracker.csproj` and push to `main`.
 
 See [`.github/workflows/cd.yml`](.github/workflows/cd.yml) for details.
