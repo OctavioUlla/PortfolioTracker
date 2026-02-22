@@ -1,3 +1,5 @@
+using System.Globalization;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
 using PortfolioTracker.Data;
 
@@ -24,6 +26,15 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+
+var defaultCulture = new CultureInfo("en-US");
+app.UseRequestLocalization(new RequestLocalizationOptions
+{
+    DefaultRequestCulture = new RequestCulture(defaultCulture),
+    SupportedCultures = new[] { defaultCulture },
+    SupportedUICultures = new[] { defaultCulture }
+});
+
 app.UseRouting();
 app.UseAuthorization();
 
