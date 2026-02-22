@@ -1,0 +1,53 @@
+@model IEnumerable<PortfolioTracker.Models.Broker>
+@{
+    ViewData["Title"] = "Brokers";
+}
+
+<div class="d-flex justify-content-end mb-3">
+    <a asp-action="Create" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i>Add Broker
+    </a>
+</div>
+
+<div class="data-table">
+    <div class="data-table-header">
+        <span class="data-table-title">Brokers</span>
+        <span class="text-muted" style="font-size:0.8rem;">@Model.Count() total</span>
+    </div>
+    @if (Model.Any())
+    {
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var b in Model)
+                {
+                    <tr>
+                        <td class="fw-semibold">
+                            <i class="fas fa-building-columns text-muted me-2"></i>@b.Name
+                        </td>
+                        <td>
+                            <a asp-action="Edit" asp-route-id="@b.Id" class="btn btn-secondary btn-sm me-1">
+                                <i class="fas fa-pen"></i>
+                            </a>
+                            <a asp-action="Delete" asp-route-id="@b.Id" class="btn btn-sm" style="background:#fee2e2;color:#b91c1c;border:none;">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="text-center py-5 text-muted">
+            <i class="fas fa-building-columns fa-3x mb-3 opacity-25"></i>
+            <p>No brokers yet. <a asp-action="Create">Add your first broker</a>.</p>
+        </div>
+    }
+</div>

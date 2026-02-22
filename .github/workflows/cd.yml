@@ -1,0 +1,68 @@
+name: CD
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build & Release (Windows)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Read version from project
+        id: version
+        run: |
+          VERSION=$(grep -oP '(?<=<Version>)[^<]+' PortfolioTracker.csproj)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Publish (self-contained, win-x64)
+        run: |
+          dotnet publish \
+            --configuration Release \
+            --runtime win-x64 \
+            --self-contained true \
+            --output ./publish \
+            -p:PublishSingleFile=true \
+            --no-restore
+
+      - name: Zip release output
+        run: zip -r portfolio-tracker-${{ steps.version.outputs.version }}-win-x64.zip ./publish
+
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view ${{ steps.version.outputs.tag }} --repo ${{ github.repository }} > /dev/null 2>&1; then
+            echo "Release ${{ steps.version.outputs.tag }} already exists — skipping."
+          else
+            gh release create ${{ steps.version.outputs.tag }} \
+              portfolio-tracker-${{ steps.version.outputs.version }}-win-x64.zip \
+              --title "Portfolio Tracker ${{ steps.version.outputs.tag }}" \
+              --notes "## Portfolio Tracker ${{ steps.version.outputs.tag }}
+
+Download **portfolio-tracker-${{ steps.version.outputs.version }}-win-x64.zip**, extract it, and run \`PortfolioTracker.exe\`.
+
+The app opens at \`http://localhost:5285\` and creates its SQLite database automatically on first run." \
+              --target ${{ github.sha }}
+          fi

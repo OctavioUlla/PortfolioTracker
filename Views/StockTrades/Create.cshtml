@@ -1,0 +1,70 @@
+@model PortfolioTracker.Models.StockTrade
+@{
+    ViewData["Title"] = "Add Stock Trade";
+}
+
+<div class="mb-3">
+    <a asp-action="Index" class="btn btn-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i>Back to Trades
+    </a>
+</div>
+
+<div class="form-card">
+    <h5 class="fw-semibold mb-4">Add Stock Trade</h5>
+    <form asp-action="Create" method="post">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2" style="font-size:0.85rem;"></div>
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label asp-for="Date" class="form-label">Date</label>
+                <input asp-for="Date" type="date" class="form-control" />
+                <span asp-validation-for="Date" class="text-danger small"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Type" class="form-label">Type</label>
+                <select asp-for="Type" class="form-select">
+                    <option value="0">Buy</option>
+                    <option value="1">Sell</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Ticker" class="form-label">Ticker Symbol</label>
+                <input asp-for="Ticker" class="form-control" placeholder="e.g. AAPL" style="text-transform:uppercase;" />
+                <span asp-validation-for="Ticker" class="text-danger small"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Quantity" class="form-label">Quantity</label>
+                <input asp-for="Quantity" type="number" step="0.000001" min="0" class="form-control" placeholder="e.g. 10" />
+                <span asp-validation-for="Quantity" class="text-danger small"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Price" class="form-label">Price per Share ($)</label>
+                <input asp-for="Price" type="number" step="0.01" min="0" class="form-control" placeholder="e.g. 150.00" />
+                <span asp-validation-for="Price" class="text-danger small"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Commission" class="form-label">Commission ($)</label>
+                <input asp-for="Commission" type="number" step="0.01" min="0" class="form-control" placeholder="e.g. 0.00" />
+            </div>
+            <div class="col-md-6">
+                <label asp-for="BrokerId" class="form-label">Broker</label>
+                <select asp-for="BrokerId" asp-items="ViewBag.Brokers" class="form-select"></select>
+            </div>
+            <div class="col-12">
+                <label asp-for="Notes" class="form-label">Notes (optional)</label>
+                <input asp-for="Notes" class="form-control" placeholder="Optional notes..." />
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save me-2"></i>Save Trade
+            </button>
+            <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
