@@ -11,5 +11,5 @@ public class CashTransaction
     public decimal SP500Price { get; set; }
     public string? Notes { get; set; }
     public int BrokerId { get; set; }
-    public Broker Broker { get; set; } = null!;
+    public Broker? Broker { get; set; }
 }
