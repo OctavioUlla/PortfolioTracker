@@ -98,6 +98,53 @@
     </div>
 </div>
 
+<!-- Stock Holdings -->
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="data-table">
+            <div class="data-table-header">
+                <span class="data-table-title">Stock Holdings</span>
+                <a asp-controller="StockTrades" asp-action="Create" class="btn btn-primary btn-sm">
+                    <i class="fas fa-plus me-1"></i>Add Trade
+                </a>
+            </div>
+            @if (Model.StockHoldings.Any())
+            {
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Ticker</th>
+                            <th class="text-end">Shares Held</th>
+                            <th class="text-end">Avg Buy Price</th>
+                            <th class="text-end">Total Cost</th>
+                            <th class="text-end">Avg Holding Days</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var h in Model.StockHoldings)
+                        {
+                            <tr>
+                                <td class="fw-semibold">@h.Ticker</td>
+                                <td class="text-end">@h.SharesHeld.ToString("G10")</td>
+                                <td class="text-end">@h.AverageBuyPrice.ToString("C2")</td>
+                                <td class="text-end">@h.TotalCost.ToString("C2")</td>
+                                <td class="text-end">@((int)h.AverageHoldingDays)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="text-center py-4 text-muted">
+                    <i class="fas fa-chart-candlestick fa-2x mb-2 opacity-25"></i>
+                    <p class="mb-0">No open stock positions. <a asp-controller="StockTrades" asp-action="Create">Add a trade</a>.</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
 <!-- IRR Calculator + Recent Transactions -->
 <div class="row g-3">
     <div class="col-lg-5">

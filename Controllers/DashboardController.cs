@@ -26,10 +26,15 @@ public class DashboardController : Controller
             .OrderBy(t => t.Date)
             .ToListAsync();
 
+        var stockTrades = await _db.StockTrades
+            .OrderBy(t => t.Date)
+            .ToListAsync();
+
         var viewModel = new DashboardViewModel
         {
             MonthlyBalances = monthlyBalances,
             CashTransactions = cashTransactions,
+            StockHoldings = StockHoldingsCalculator.Calculate(stockTrades),
             TotalCurrentBalance = monthlyBalances
                 .GroupBy(m => new { m.Year, m.Month })
                 .OrderByDescending(g => g.Key.Year).ThenByDescending(g => g.Key.Month)
