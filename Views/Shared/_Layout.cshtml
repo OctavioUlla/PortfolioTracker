@@ -449,6 +449,13 @@
                 Monthly Balances
             </a>
         </li>
+        <li class="sidebar-nav-item">
+            <a class="sidebar-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Import" ? "active" : "")"
+               asp-controller="Import" asp-action="Index">
+                <span class="nav-icon"><i class="fas fa-file-import"></i></span>
+                Import Excel
+            </a>
+        </li>
     </ul>
 
     <div class="sidebar-section-title">Settings</div>
@@ -473,6 +480,12 @@
     </div>
 
     <div class="page-content">
+        @if (TempData["ImportSuccess"] is string successMsg)
+        {
+            <div class="alert alert-success py-2 mb-3" style="font-size:0.875rem;">
+                <i class="fas fa-circle-check me-2"></i>@successMsg
+            </div>
+        }
         @RenderBody()
     </div>
 </div>
