@@ -13,7 +13,7 @@ public class StockTrade
     public decimal Commission { get; set; }
     public string? Notes { get; set; }
     public int BrokerId { get; set; }
-    public Broker Broker { get; set; } = null!;
+    public Broker? Broker { get; set; }
 
     public decimal TotalValue => Quantity * Price;
 }
