@@ -6,6 +6,7 @@ public class DashboardViewModel
 {
     public List<MonthlyBalance> MonthlyBalances { get; set; } = new();
     public List<CashTransaction> CashTransactions { get; set; } = new();
+    public List<StockHoldingViewModel> StockHoldings { get; set; } = new();
     public decimal TotalCurrentBalance { get; set; }
     public decimal LifetimeIRR { get; set; }
     public SP500VirtualPortfolio SP500VirtualPortfolio { get; set; } = new();
