@@ -1,0 +1,95 @@
+@{
+    ViewData["Title"] = "Import Excel";
+}
+
+<div class="form-card" style="max-width:640px;">
+    <h5 class="fw-semibold mb-1" style="color:#0f172a;">Import Excel Portfolio</h5>
+    <p class="text-muted mb-4" style="font-size:0.875rem;">
+        Upload your <strong>Ahorro e Inversiones</strong> Excel file to import deposits,
+        stock trades, and monthly balances.
+    </p>
+
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="alert alert-danger py-2 mb-3" style="font-size:0.875rem;">
+            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+            {
+                <div>@error.ErrorMessage</div>
+            }
+        </div>
+    }
+
+    <form asp-action="Upload" method="post" enctype="multipart/form-data">
+        @Html.AntiForgeryToken()
+
+        <div class="mb-3">
+            <label class="form-label" for="brokerId">Broker</label>
+            <select name="brokerId" id="brokerId" class="form-select" required>
+                @foreach (SelectListItem item in (ViewBag.Brokers as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>()))
+                {
+                    <option value="@item.Value">@item.Text</option>
+                }
+            </select>
+            <div class="form-text">All imported records will be assigned to this broker.</div>
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label" for="file">Excel File (.xlsx)</label>
+            <input type="file" name="file" id="file" class="form-control" accept=".xlsx,.xls" required />
+            <div class="form-text">
+                Expected format: <em>Ahorro e Inversiones.xlsx</em> — sheet named <strong>Registro</strong>.
+            </div>
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-upload me-2"></i>Upload &amp; Preview
+            </button>
+            <a asp-controller="Dashboard" asp-action="Index" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<div class="mt-4" style="max-width:640px;">
+    <div class="data-table">
+        <div class="data-table-header">
+            <span class="data-table-title">What will be imported</span>
+        </div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Row Type</th>
+                    <th>Condition</th>
+                    <th>Maps To</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><span class="badge-deposit">Deposit / Withdrawal</span></td>
+                    <td>Column E = <code>APORTE</code></td>
+                    <td>Deposits &amp; Withdrawals</td>
+                </tr>
+                <tr>
+                    <td><span class="badge-buy">Stock Buy</span></td>
+                    <td>Ticker in E, positive quantity in F</td>
+                    <td>Stock Trades</td>
+                </tr>
+                <tr>
+                    <td><span class="badge-sell">Stock Sell</span></td>
+                    <td>Ticker in E, negative quantity in F</td>
+                    <td>Stock Trades</td>
+                </tr>
+                <tr>
+                    <td><i class="fas fa-calendar-check text-muted"></i></td>
+                    <td>Orange month-end summary rows (Column M = total)</td>
+                    <td>Monthly Balances</td>
+                </tr>
+                <tr>
+                    <td class="text-muted">—</td>
+                    <td><em>Efectivo</em> section (columns B–D)</td>
+                    <td>Ignored</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
