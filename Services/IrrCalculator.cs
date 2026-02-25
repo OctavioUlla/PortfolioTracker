@@ -9,11 +9,20 @@ public static class IrrCalculator
     /// Deposits are negative cash flows; withdrawals and final value are positive.
     /// Returns annualized rate as a percentage (e.g. 12.50 means 12.50%).
     /// </summary>
-    public static decimal Calculate(List<CashTransaction> transactions, List<MonthlyBalance> balances)
+    /// <param name="startingBalance">
+    /// Portfolio value at the start of the period (used for sub-period calculations).
+    /// Treated as a negative cash flow (cost) at <paramref name="periodStart"/>.
+    /// </param>
+    /// <param name="periodStart">Date of the starting balance cash flow.</param>
+    public static decimal Calculate(List<CashTransaction> transactions, List<MonthlyBalance> balances,
+        decimal startingBalance = 0, DateTime? periodStart = null)
     {
-        if (!transactions.Any() || !balances.Any()) return 0;
+        if (!balances.Any()) return 0;
 
         var cashFlows = new List<(DateTime date, double amount)>();
+
+        if (startingBalance > 0 && periodStart.HasValue)
+            cashFlows.Add((periodStart.Value, -(double)startingBalance));
 
         foreach (var t in transactions.OrderBy(t => t.Date))
         {
