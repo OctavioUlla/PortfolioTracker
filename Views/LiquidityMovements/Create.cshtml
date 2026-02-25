@@ -29,7 +29,7 @@
             </div>
             <div class="col-md-6">
                 <label asp-for="Amount" class="form-label">Amount ($)</label>
-                <input asp-for="Amount" type="number" step="0.01" class="form-control" placeholder="e.g. 1000.00 or -500.00" />
+                <input asp-for="Amount" type="number" step="0.0001" class="form-control" placeholder="e.g. 1000.0000 or -500.0000" />
                 <span asp-validation-for="Amount" class="text-danger small"></span>
                 <div class="form-text">Use positive for inflows, negative for outflows.</div>
             </div>
