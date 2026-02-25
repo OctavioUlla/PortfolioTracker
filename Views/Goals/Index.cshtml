@@ -270,9 +270,9 @@
         const goalColors = ['#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
         goals.forEach((g, i) => {
             const color = goalColors[i % goalColors.length];
-            const goalData = allLabels.map(() => g.targetValue);
+            const goalData = allLabels.map(() => g.TargetValue);
             chart.data.datasets.push({
-                label: g.name + ' Goal',
+                label: g.Name + ' Goal',
                 data: goalData,
                 borderColor: color,
                 borderWidth: 1.5,
@@ -323,9 +323,9 @@
             const goalColors = ['#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
             goals.forEach((g, i) => {
                 const color = goalColors[i % goalColors.length];
-                const goalData = newAllLabels.map(() => g.targetValue);
+                const goalData = newAllLabels.map(() => g.TargetValue);
                 chart.data.datasets.push({
-                    label: g.name + ' Goal',
+                    label: g.Name + ' Goal',
                     data: goalData,
                     borderColor: color,
                     borderWidth: 1.5,
