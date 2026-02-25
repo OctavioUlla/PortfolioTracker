@@ -37,7 +37,7 @@
                     foreach (var b in groupItems)
                     {
                         <tr>
-                            <td>@(firstRow ? new DateTime(b.Year, b.Month, 1).ToString("MMMM yyyy") : "")</td>
+                        <td data-sort-value="@(new DateTime(b.Year, b.Month, 1).ToString("yyyyMM"))">@(firstRow ? new DateTime(b.Year, b.Month, 1).ToString("MMMM yyyy") : "")</td>
                             <td>@b.Broker?.Name</td>
                             <td>@b.Balance.ToString("C2")</td>
                             <td class="fw-semibold">@(firstRow ? groupTotal.ToString("C2") : "")</td>

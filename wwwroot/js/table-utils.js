@@ -4,6 +4,13 @@
         return cell ? cell.textContent.trim().toLowerCase() : '';
     }
 
+    function getCellSortValue(row, colIndex) {
+        var cell = row.querySelectorAll('td')[colIndex];
+        if (!cell) return '';
+        var sortValue = cell.dataset.sortValue;
+        return sortValue !== undefined ? sortValue : cell.textContent.trim().toLowerCase();
+    }
+
     function applyFilters(table) {
         var inputs = table.querySelectorAll('.table-filter-input');
         var rows = Array.from(table.querySelector('tbody').querySelectorAll('tr'));
@@ -50,8 +57,8 @@
         } else {
             if (icon) icon.className = dir === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down';
             rows.sort(function (a, b) {
-                var aText = getCellText(a, colIndex);
-                var bText = getCellText(b, colIndex);
+                var aText = getCellSortValue(a, colIndex);
+                var bText = getCellSortValue(b, colIndex);
                 var aNum = parseFloat(aText.replace(/[^0-9.-]/g, ''));
                 var bNum = parseFloat(bText.replace(/[^0-9.-]/g, ''));
                 var cmp;
