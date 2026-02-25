@@ -9,6 +9,8 @@ public class DashboardViewModel
     public List<StockHoldingViewModel> StockHoldings { get; set; } = new();
     public decimal TotalCurrentBalance { get; set; }
     public decimal LifetimeIRR { get; set; }
+    public decimal LifetimeTotalReturn { get; set; }
+    public decimal LifetimeTotalReturnAmount { get; set; }
     public SP500VirtualPortfolio SP500VirtualPortfolio { get; set; } = new();
 
     // For portfolio chart: one data point per month (sum of all brokers)
