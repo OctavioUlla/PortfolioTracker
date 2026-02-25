@@ -34,7 +34,7 @@
                 @foreach (var t in Model)
                 {
                     <tr>
-                        <td>@t.Date.ToString("MMM d, yyyy")</td>
+                        <td data-sort-value="@t.Date.ToString("yyyyMMdd")">@t.Date.ToString("MMM d, yyyy")</td>
                         <td>
                             @if (t.Type == PortfolioTracker.Models.TradeType.Buy)
                             {
