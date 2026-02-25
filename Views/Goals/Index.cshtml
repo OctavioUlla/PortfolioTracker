@@ -179,6 +179,7 @@
 </div>
 
 @section Scripts {
+@Html.AntiForgeryToken()
 <script>
     // Historical data
     const histLabels = [@Html.Raw(Model.HistoricalChartLabels)];
@@ -296,10 +297,14 @@
         btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Calculating...';
 
         try {
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
             const params = new URLSearchParams({ monthlyDeposit: deposit, annualIRR: irr });
             const resp = await fetch('/Goals/Extrapolate', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': token
+                },
                 body: params.toString()
             });
             const result = await resp.json();

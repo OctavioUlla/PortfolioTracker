@@ -8,6 +8,36 @@ public class GoalsTests : PageTest
 {
     private const string BaseUrl = "http://localhost:5285";
 
+    /// <summary>
+    /// Fetches the Goals page and extracts the anti-forgery token and cookies
+    /// for use in subsequent POST requests.
+    /// </summary>
+    private async Task<(string token, string cookies)> GetAntiForgeryTokenAsync()
+    {
+        var response = await Page.APIRequest.GetAsync($"{BaseUrl}/Goals");
+        var html = await response.TextAsync();
+        var headers = response.Headers;
+
+        // Extract token from hidden field
+        var match = System.Text.RegularExpressions.Regex.Match(html,
+            @"name=""__RequestVerificationToken""\s+type=""hidden""\s+value=""([^""]+)""");
+        var token = match.Success ? match.Groups[1].Value : "";
+
+        // Extract cookies
+        headers.TryGetValue("set-cookie", out var cookieHeader);
+        return (token, cookieHeader ?? "");
+    }
+
+    private async Task<IAPIResponse> PostWithTokenAsync(string url, IFormData formData)
+    {
+        // First navigate to the page to get cookie context
+        await Page.GotoAsync($"{BaseUrl}/Goals");
+        var tokenValue = await Page.Locator("input[name='__RequestVerificationToken']").First.GetAttributeAsync("value");
+
+        formData.Set("__RequestVerificationToken", tokenValue ?? "");
+        return await Page.APIRequest.PostAsync(url, new() { Form = formData });
+    }
+
     [Test]
     public async Task GoalsPage_Loads_Successfully()
     {
@@ -49,14 +79,12 @@ public class GoalsTests : PageTest
     [Test]
     public async Task GoalsPage_CanAddGoal()
     {
-        // Use API request to add goal (same as form POST)
         var formData = Page.APIRequest.CreateFormData();
         formData.Set("Name", "Playwright Add Test");
         formData.Set("TargetValue", "200000");
         formData.Set("TargetDate", "2035-06-15");
-        await Page.APIRequest.PostAsync($"{BaseUrl}/Goals/Create", new() { Form = formData });
+        await PostWithTokenAsync($"{BaseUrl}/Goals/Create", formData);
 
-        // Navigate to verify the goal appears
         await Page.GotoAsync($"{BaseUrl}/Goals");
         await Expect(Page.GetByText("Playwright Add Test").First).ToBeVisibleAsync();
         await Expect(Page.GetByText("$200,000").First).ToBeVisibleAsync();
@@ -70,21 +98,19 @@ public class GoalsTests : PageTest
         formData.Set("Name", "Delete Me");
         formData.Set("TargetValue", "50000");
         formData.Set("TargetDate", "2030-01-01");
-        await Page.APIRequest.PostAsync($"{BaseUrl}/Goals/Create", new() { Form = formData });
+        await PostWithTokenAsync($"{BaseUrl}/Goals/Create", formData);
 
         await Page.GotoAsync($"{BaseUrl}/Goals");
         await Expect(Page.GetByText("Delete Me")).ToBeVisibleAsync();
 
-        // Delete the goal via the button (with dialog handler)
-        Page.Dialog += (_, dialog) => dialog.AcceptAsync();
+        // Get the goal ID and delete via API
         var deleteRow = Page.Locator("tr", new() { HasText = "Delete Me" });
         var deleteForm = deleteRow.Locator("form");
         var goalId = await deleteForm.Locator("input[name='id']").GetAttributeAsync("value");
 
-        // Delete via API
         var deleteData = Page.APIRequest.CreateFormData();
         deleteData.Set("id", goalId!);
-        await Page.APIRequest.PostAsync($"{BaseUrl}/Goals/Delete", new() { Form = deleteData });
+        await PostWithTokenAsync($"{BaseUrl}/Goals/Delete", deleteData);
 
         await Page.GotoAsync($"{BaseUrl}/Goals");
         await Expect(Page.GetByText("Delete Me")).Not.ToBeVisibleAsync();
@@ -97,8 +123,7 @@ public class GoalsTests : PageTest
         formData.Set("monthlyDeposit", "1000");
         formData.Set("annualIRR", "10");
 
-        var response = await Page.APIRequest.PostAsync($"{BaseUrl}/Goals/Extrapolate",
-            new() { Form = formData });
+        var response = await PostWithTokenAsync($"{BaseUrl}/Goals/Extrapolate", formData);
         Assert.That(response.Status, Is.EqualTo(200));
 
         var json = await response.JsonAsync();

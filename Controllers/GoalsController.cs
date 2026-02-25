@@ -78,6 +78,7 @@ public class GoalsController : Controller
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(Goal goal)
     {
         if (ModelState.IsValid)
@@ -89,6 +90,7 @@ public class GoalsController : Controller
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id)
     {
         var goal = await _db.Goals.FindAsync(id);
@@ -101,6 +103,7 @@ public class GoalsController : Controller
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Extrapolate(decimal monthlyDeposit, decimal annualIRR)
     {
         var monthlyBalances = await _db.MonthlyBalances
