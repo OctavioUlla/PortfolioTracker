@@ -33,7 +33,7 @@
                     <div class="stat-card-sub">
                         Annualized (XIRR) &middot;
                         <span class="@(Model.LifetimeTotalReturn >= 0 ? "positive" : "negative")">
-                            @(Model.LifetimeTotalReturn >= 0 ? "+" : "")@Model.LifetimeTotalReturn.ToString("F2")% total return
+                            @(Model.LifetimeTotalReturn >= 0 ? "+" : "")@Model.LifetimeTotalReturn.ToString("F2")% (@(Model.LifetimeTotalReturnAmount >= 0 ? "+" : "")@Model.LifetimeTotalReturnAmount.ToString("C0")) total return
                         </span>
                     </div>
                 </div>
@@ -202,6 +202,7 @@
                 <hr class="my-2">
                 <div class="text-muted mb-1" style="font-size:0.75rem;">Total Return</div>
                 <div class="irr-value" id="totalReturnDisplay">0.00%</div>
+                <div class="irr-value" style="font-size:1rem;" id="totalReturnAmountDisplay">$0</div>
                 <div class="text-muted mt-1" style="font-size:0.75rem;">Absolute return for the period</div>
             </div>
         </div>
@@ -365,6 +366,9 @@
             const totalReturnEl = document.getElementById('totalReturnDisplay');
             totalReturnEl.textContent = (data.totalReturn >= 0 ? '+' : '') + data.totalReturn.toFixed(2) + '%';
             totalReturnEl.className = 'irr-value ' + (data.totalReturn >= 0 ? 'positive' : 'negative');
+            const totalReturnAmountEl = document.getElementById('totalReturnAmountDisplay');
+            totalReturnAmountEl.textContent = (data.totalReturnAmount >= 0 ? '+' : '') + data.totalReturnAmount.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 });
+            totalReturnAmountEl.className = 'irr-value ' + (data.totalReturnAmount >= 0 ? 'positive' : 'negative');
         } catch (e) {
             alert('Error calculating IRR: ' + e.message);
         }

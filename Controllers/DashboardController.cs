@@ -42,6 +42,7 @@ public class DashboardController : Controller
                 ?.Sum(m => m.Balance) ?? 0,
             LifetimeIRR = IrrCalculator.Calculate(cashTransactions, monthlyBalances),
             LifetimeTotalReturn = TotalReturnCalculator.Calculate(cashTransactions, monthlyBalances),
+            LifetimeTotalReturnAmount = TotalReturnCalculator.CalculateAmount(cashTransactions, monthlyBalances),
             SP500VirtualPortfolio = SP500Calculator.Calculate(cashTransactions),
         };
 
@@ -60,6 +61,7 @@ public class DashboardController : Controller
 
         decimal irr;
         decimal totalReturn;
+        decimal totalReturnAmount;
         string period;
 
         if (year.HasValue)
@@ -75,6 +77,7 @@ public class DashboardController : Controller
             irr = IrrCalculator.Calculate(yearTransactions, yearEndBalances,
                 prevYearBalance, new DateTime(year.Value, 1, 1));
             totalReturn = TotalReturnCalculator.Calculate(yearTransactions, yearEndBalances, prevYearBalance);
+            totalReturnAmount = TotalReturnCalculator.CalculateAmount(yearTransactions, yearEndBalances, prevYearBalance);
             period = year.Value.ToString();
         }
         else if (startDate.HasValue && endDate.HasValue)
@@ -93,15 +96,17 @@ public class DashboardController : Controller
             irr = IrrCalculator.Calculate(rangeTransactions, rangeEndBalances,
                 prevPeriodBalance, startDate.Value);
             totalReturn = TotalReturnCalculator.Calculate(rangeTransactions, rangeEndBalances, prevPeriodBalance);
+            totalReturnAmount = TotalReturnCalculator.CalculateAmount(rangeTransactions, rangeEndBalances, prevPeriodBalance);
             period = $"{startDate.Value:MMM yyyy} - {endDate.Value:MMM yyyy}";
         }
         else
         {
             irr = IrrCalculator.Calculate(cashTransactions, monthlyBalances);
             totalReturn = TotalReturnCalculator.Calculate(cashTransactions, monthlyBalances);
+            totalReturnAmount = TotalReturnCalculator.CalculateAmount(cashTransactions, monthlyBalances);
             period = "Lifetime";
         }
 
-        return Json(new { irr, totalReturn, period });
+        return Json(new { irr, totalReturn, totalReturnAmount, period });
     }
 }
