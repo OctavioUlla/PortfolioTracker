@@ -13,6 +13,7 @@ public class AppDbContext : DbContext
     public DbSet<MonthlyBalance> MonthlyBalances { get; set; }
     public DbSet<LiquidityAccount> LiquidityAccounts { get; set; }
     public DbSet<LiquidityMovement> LiquidityMovements { get; set; }
+    public DbSet<Goal> Goals { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -34,5 +35,7 @@ public class AppDbContext : DbContext
             .Property(t => t.Balance).HasColumnType("decimal(18,2)");
         modelBuilder.Entity<LiquidityMovement>()
             .Property(t => t.Amount).HasColumnType("decimal(18,2)");
+        modelBuilder.Entity<Goal>()
+            .Property(g => g.TargetValue).HasColumnType("decimal(18,2)");
     }
 }
