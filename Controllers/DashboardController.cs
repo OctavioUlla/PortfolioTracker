@@ -64,16 +64,31 @@ public class DashboardController : Controller
         {
             var yearTransactions = cashTransactions.Where(t => t.Date.Year == year.Value).ToList();
             var yearEndBalances = monthlyBalances.Where(m => m.Year == year.Value).ToList();
-            irr = IrrCalculator.Calculate(yearTransactions, yearEndBalances);
+            var prevYearBalance = monthlyBalances
+                .Where(m => m.Year < year.Value)
+                .GroupBy(b => new { b.Year, b.Month })
+                .OrderByDescending(g => g.Key.Year).ThenByDescending(g => g.Key.Month)
+                .FirstOrDefault()
+                ?.Sum(b => b.Balance) ?? 0;
+            irr = IrrCalculator.Calculate(yearTransactions, yearEndBalances,
+                prevYearBalance, new DateTime(year.Value, 1, 1));
             period = year.Value.ToString();
         }
         else if (startDate.HasValue && endDate.HasValue)
         {
+            var periodStart = new DateTime(startDate.Value.Year, startDate.Value.Month, 1);
             var rangeTransactions = cashTransactions
                 .Where(t => t.Date >= startDate.Value && t.Date <= endDate.Value).ToList();
             var rangeEndBalances = monthlyBalances
-                .Where(m => m.Date >= startDate.Value && m.Date <= endDate.Value).ToList();
-            irr = IrrCalculator.Calculate(rangeTransactions, rangeEndBalances);
+                .Where(m => m.Date >= periodStart && m.Date <= endDate.Value).ToList();
+            var prevPeriodBalance = monthlyBalances
+                .Where(m => m.Date < periodStart)
+                .GroupBy(b => new { b.Year, b.Month })
+                .OrderByDescending(g => g.Key.Year).ThenByDescending(g => g.Key.Month)
+                .FirstOrDefault()
+                ?.Sum(b => b.Balance) ?? 0;
+            irr = IrrCalculator.Calculate(rangeTransactions, rangeEndBalances,
+                prevPeriodBalance, startDate.Value);
             period = $"{startDate.Value:MMM yyyy} - {endDate.Value:MMM yyyy}";
         }
         else
