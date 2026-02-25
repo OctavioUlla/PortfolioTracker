@@ -486,6 +486,24 @@
         </li>
     </ul>
 
+    <div class="sidebar-section-title">Liquidity</div>
+    <ul class="sidebar-nav">
+        <li class="sidebar-nav-item">
+            <a class="sidebar-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "LiquidityAccounts" ? "active" : "")"
+               asp-controller="LiquidityAccounts" asp-action="Index">
+                <span class="nav-icon"><i class="fas fa-piggy-bank"></i></span>
+                Cash Accounts
+            </a>
+        </li>
+        <li class="sidebar-nav-item">
+            <a class="sidebar-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "LiquidityMovements" ? "active" : "")"
+               asp-controller="LiquidityMovements" asp-action="Index">
+                <span class="nav-icon"><i class="fas fa-coins"></i></span>
+                Cash Movements
+            </a>
+        </li>
+    </ul>
+
     <div class="sidebar-section-title">Settings</div>
     <ul class="sidebar-nav">
         <li class="sidebar-nav-item">

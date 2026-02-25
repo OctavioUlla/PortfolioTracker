@@ -1,0 +1,64 @@
+@model IEnumerable<PortfolioTracker.Models.LiquidityAccount>
+@{
+    ViewData["Title"] = "Cash Accounts";
+}
+
+<div class="d-flex justify-content-end mb-3">
+    <a asp-action="Create" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i>Add Account
+    </a>
+</div>
+
+<div class="data-table">
+    <div class="data-table-header">
+        <span class="data-table-title">Cash Accounts</span>
+        <span class="text-muted" style="font-size:0.8rem;">@Model.Count() total</span>
+    </div>
+    @if (Model.Any())
+    {
+        <table class="table" data-sortable>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th class="text-end">Current Balance</th>
+                    <th>Notes</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var a in Model)
+                {
+                    var balance = a.Movements.Sum(m => m.Amount);
+                    <tr>
+                        <td class="fw-semibold">
+                            <i class="fas fa-piggy-bank text-muted me-2"></i>@a.Name
+                        </td>
+                        <td class="text-end fw-semibold @(balance >= 0 ? "positive" : "negative")">
+                            @balance.ToString("C2")
+                        </td>
+                        <td class="text-muted" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">@a.Notes</td>
+                        <td>
+                            <a asp-controller="LiquidityMovements" asp-action="Index" asp-route-accountId="@a.Id"
+                               class="btn btn-secondary btn-sm me-1" title="View movements">
+                                <i class="fas fa-list"></i>
+                            </a>
+                            <a asp-action="Edit" asp-route-id="@a.Id" class="btn btn-secondary btn-sm me-1">
+                                <i class="fas fa-pen"></i>
+                            </a>
+                            <a asp-action="Delete" asp-route-id="@a.Id" class="btn btn-sm" style="background:#fee2e2;color:#b91c1c;border:none;">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="text-center py-5 text-muted">
+            <i class="fas fa-piggy-bank fa-3x mb-3 opacity-25"></i>
+            <p>No cash accounts yet. <a asp-action="Create">Add your first account</a>.</p>
+        </div>
+    }
+</div>

@@ -1,0 +1,30 @@
+@model PortfolioTracker.Models.LiquidityMovement
+@{
+    ViewData["Title"] = "Delete Cash Movement";
+}
+
+<div class="mb-3">
+    <a asp-action="Index" class="btn btn-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i>Back to Movements
+    </a>
+</div>
+
+<div class="form-card">
+    <h5 class="fw-semibold mb-4 text-danger">Delete Cash Movement</h5>
+    <p>Are you sure you want to delete this movement?</p>
+    <table class="table" style="max-width:400px;">
+        <tr><th>Date</th><td>@Model.Date.ToString("MMM d, yyyy")</td></tr>
+        <tr><th>Account</th><td>@Model.LiquidityAccount?.Name</td></tr>
+        <tr><th>Amount</th><td class="fw-semibold @(Model.Amount >= 0 ? "positive" : "negative")">@(Model.Amount >= 0 ? "+" : "")@Model.Amount.ToString("C2")</td></tr>
+        <tr><th>Notes</th><td>@Model.Notes</td></tr>
+    </table>
+    <form asp-action="Delete" method="post">
+        <input type="hidden" name="id" value="@Model.Id" />
+        <div class="d-flex gap-2 mt-3">
+            <button type="submit" class="btn btn-sm" style="background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;">
+                <i class="fas fa-trash me-1"></i>Yes, Delete
+            </button>
+            <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>

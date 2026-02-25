@@ -1,0 +1,72 @@
+@model IEnumerable<PortfolioTracker.Models.LiquidityMovement>
+@{
+    ViewData["Title"] = "Cash Movements";
+    var accounts = ViewBag.Accounts as List<PortfolioTracker.Models.LiquidityAccount> ?? new();
+    int? selectedAccountId = ViewBag.SelectedAccountId;
+    var selectedAccount = selectedAccountId.HasValue ? accounts.FirstOrDefault(a => a.Id == selectedAccountId.Value) : null;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="d-flex gap-2">
+        <a asp-action="Index" class="btn btn-secondary btn-sm @(selectedAccountId == null ? "active" : "")">All Accounts</a>
+        @foreach (var a in accounts)
+        {
+            <a asp-action="Index" asp-route-accountId="@a.Id"
+               class="btn btn-secondary btn-sm @(selectedAccountId == a.Id ? "active" : "")">@a.Name</a>
+        }
+    </div>
+    <a asp-action="Create" asp-route-accountId="@selectedAccountId" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i>Add Movement
+    </a>
+</div>
+
+<div class="data-table">
+    <div class="data-table-header">
+        <span class="data-table-title">
+            @(selectedAccount != null ? $"Movements — {selectedAccount.Name}" : "All Cash Movements")
+        </span>
+        <span class="text-muted" style="font-size:0.8rem;">@Model.Count() total</span>
+    </div>
+    @if (Model.Any())
+    {
+        <table class="table" data-sortable>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Account</th>
+                    <th class="text-end">Amount</th>
+                    <th>Notes</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var m in Model)
+                {
+                    <tr>
+                        <td data-sort-value="@m.Date.ToString("yyyyMMdd")">@m.Date.ToString("MMM d, yyyy")</td>
+                        <td>@m.LiquidityAccount?.Name</td>
+                        <td class="text-end fw-semibold @(m.Amount >= 0 ? "positive" : "negative")">
+                            @(m.Amount >= 0 ? "+" : "")@m.Amount.ToString("C2")
+                        </td>
+                        <td class="text-muted" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">@m.Notes</td>
+                        <td>
+                            <a asp-action="Edit" asp-route-id="@m.Id" class="btn btn-secondary btn-sm me-1">
+                                <i class="fas fa-pen"></i>
+                            </a>
+                            <a asp-action="Delete" asp-route-id="@m.Id" class="btn btn-sm" style="background:#fee2e2;color:#b91c1c;border:none;">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="text-center py-5 text-muted">
+            <i class="fas fa-coins fa-3x mb-3 opacity-25"></i>
+            <p>No movements yet. <a asp-action="Create">Add your first movement</a>.</p>
+        </div>
+    }
+</div>

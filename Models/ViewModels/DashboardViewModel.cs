@@ -12,6 +12,8 @@ public class DashboardViewModel
     public decimal LifetimeTotalReturn { get; set; }
     public decimal LifetimeTotalReturnAmount { get; set; }
     public SP500VirtualPortfolio SP500VirtualPortfolio { get; set; } = new();
+    public List<LiquidityAccount> LiquidityAccounts { get; set; } = new();
+    public decimal TotalCash => LiquidityAccounts.Sum(a => a.Movements.Sum(m => m.Amount));
 
     // For portfolio chart: one data point per month (sum of all brokers)
     public string PortfolioChartLabels => string.Join(",",
