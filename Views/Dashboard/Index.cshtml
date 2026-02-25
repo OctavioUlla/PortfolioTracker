@@ -30,7 +30,12 @@
                     <div class="stat-card-value @(Model.LifetimeIRR >= 0 ? "positive" : "negative")">
                         @Model.LifetimeIRR.ToString("F2")%
                     </div>
-                    <div class="stat-card-sub">Annualized return (XIRR)</div>
+                    <div class="stat-card-sub">
+                        Annualized (XIRR) &middot;
+                        <span class="@(Model.LifetimeTotalReturn >= 0 ? "positive" : "negative")">
+                            @(Model.LifetimeTotalReturn >= 0 ? "+" : "")@Model.LifetimeTotalReturn.ToString("F2")% total return
+                        </span>
+                    </div>
                 </div>
                 <div class="stat-card-icon" style="background:#dcfce7;">
                     <i class="fas fa-percent" style="color:#15803d;"></i>
@@ -193,7 +198,11 @@
             <div id="irrResult" class="irr-result d-none">
                 <div class="text-muted mb-1" style="font-size:0.75rem;" id="irrPeriodLabel">Lifetime</div>
                 <div class="irr-value" id="irrValueDisplay">0.00%</div>
-                <div class="text-muted mt-1" style="font-size:0.75rem;">Annualized rate of return</div>
+                <div class="text-muted mt-1" style="font-size:0.75rem;">Annualized rate of return (XIRR)</div>
+                <hr class="my-2">
+                <div class="text-muted mb-1" style="font-size:0.75rem;">Total Return</div>
+                <div class="irr-value" id="totalReturnDisplay">0.00%</div>
+                <div class="text-muted mt-1" style="font-size:0.75rem;">Absolute return for the period</div>
             </div>
         </div>
     </div>
@@ -353,6 +362,9 @@
             periodEl.textContent = data.period;
             valueEl.textContent = data.irr.toFixed(2) + '%';
             valueEl.className = 'irr-value ' + (data.irr >= 0 ? 'positive' : 'negative');
+            const totalReturnEl = document.getElementById('totalReturnDisplay');
+            totalReturnEl.textContent = (data.totalReturn >= 0 ? '+' : '') + data.totalReturn.toFixed(2) + '%';
+            totalReturnEl.className = 'irr-value ' + (data.totalReturn >= 0 ? 'positive' : 'negative');
         } catch (e) {
             alert('Error calculating IRR: ' + e.message);
         }
