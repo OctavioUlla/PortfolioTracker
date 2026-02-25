@@ -31,9 +31,8 @@
                         @Model.LifetimeIRR.ToString("F2")%
                     </div>
                     <div class="stat-card-sub">
-                        Annualized (XIRR) &middot;
                         <span class="@(Model.LifetimeTotalReturn >= 0 ? "positive" : "negative")">
-                            @(Model.LifetimeTotalReturn >= 0 ? "+" : "")@Model.LifetimeTotalReturn.ToString("F2")% (@(Model.LifetimeTotalReturnAmount >= 0 ? "+" : "")@Model.LifetimeTotalReturnAmount.ToString("C0")) total return
+                            @(Model.LifetimeTotalReturn >= 0 ? "+" : "")@Model.LifetimeTotalReturn.ToString("F2")% (@(Model.LifetimeTotalReturnAmount >= 0 ? "+" : "")@Model.LifetimeTotalReturnAmount.ToString("C0")) Total return
                         </span>
                     </div>
                 </div>
