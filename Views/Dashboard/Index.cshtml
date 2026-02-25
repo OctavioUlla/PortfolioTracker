@@ -85,6 +85,7 @@
                 <div class="d-flex gap-3" style="font-size:0.8rem;">
                     <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#6366f1;margin-right:4px;"></span>Portfolio</span>
                     <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#f59e0b;margin-right:4px;"></span>S&amp;P 500 Virtual</span>
+                    <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#10b981;margin-right:4px;"></span>Total Deposits</span>
                 </div>
             </div>
             @if (hasData)
@@ -268,6 +269,7 @@
     const labels = [@Html.Raw(Model.PortfolioChartLabels)];
     const portfolioData = [@Html.Raw(Model.PortfolioChartData)];
     const sp500Data = [@Html.Raw(string.IsNullOrEmpty(Model.SP500ChartData) ? "" : Model.SP500ChartData)];
+    const depositsData = [@Html.Raw(string.IsNullOrEmpty(Model.DepositsChartData) ? "" : Model.DepositsChartData)];
 
     const ctx = document.getElementById('portfolioChart').getContext('2d');
     new Chart(ctx, {
@@ -297,6 +299,17 @@
                     fill: true,
                     tension: 0.3,
                     spanGaps: true,
+                },
+                {
+                    label: 'Total Deposits',
+                    data: depositsData,
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16,185,129,0.06)',
+                    borderWidth: 2,
+                    pointRadius: 3,
+                    pointHoverRadius: 5,
+                    fill: false,
+                    tension: 0.3,
                 }
             ]
         },

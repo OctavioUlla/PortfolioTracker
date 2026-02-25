@@ -26,6 +26,37 @@ public class DashboardViewModel
             .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Month)
             .Select(g => g.Sum(m => m.Balance).ToString("F2", System.Globalization.CultureInfo.InvariantCulture)));
 
+    // Cumulative deposits chart data aligned to same months as portfolio
+    public string DepositsChartData
+    {
+        get
+        {
+            var months = MonthlyBalances
+                .GroupBy(m => new { m.Year, m.Month })
+                .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Month)
+                .Select(g => new DateTime(g.Key.Year, g.Key.Month, 1))
+                .ToList();
+
+            if (!months.Any())
+                return string.Empty;
+
+            var deposits = CashTransactions
+                .Where(t => t.Type == TransactionType.Deposit)
+                .ToList();
+
+            var result = new List<string>();
+            foreach (var month in months)
+            {
+                var monthEnd = new DateTime(month.Year, month.Month, DateTime.DaysInMonth(month.Year, month.Month));
+                var cumulative = deposits
+                    .Where(t => t.Date <= monthEnd)
+                    .Sum(t => t.Amount);
+                result.Add(cumulative.ToString("F2", System.Globalization.CultureInfo.InvariantCulture));
+            }
+            return string.Join(",", result);
+        }
+    }
+
     // S&P 500 chart data aligned to same months as portfolio
     public string SP500ChartData
     {
