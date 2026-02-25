@@ -1,0 +1,41 @@
+@model PortfolioTracker.Models.LiquidityAccount
+@{
+    ViewData["Title"] = "Edit Cash Account";
+}
+
+<div class="mb-3">
+    <a asp-action="Index" class="btn btn-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i>Back to Accounts
+    </a>
+</div>
+
+<div class="form-card">
+    <h5 class="fw-semibold mb-4">Edit Cash Account</h5>
+    <form asp-action="Edit" method="post">
+        <input type="hidden" asp-for="Id" />
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2" style="font-size:0.85rem;"></div>
+
+        <div class="row g-3">
+            <div class="col-12">
+                <label asp-for="Name" class="form-label">Account Name</label>
+                <input asp-for="Name" class="form-control" placeholder="e.g. Bank A, Home Stash" />
+                <span asp-validation-for="Name" class="text-danger small"></span>
+            </div>
+            <div class="col-12">
+                <label asp-for="Notes" class="form-label">Notes (optional)</label>
+                <input asp-for="Notes" class="form-control" placeholder="Optional notes..." />
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save me-2"></i>Save Changes
+            </button>
+            <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

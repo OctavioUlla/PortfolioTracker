@@ -62,14 +62,12 @@
         <div class="stat-card">
             <div class="d-flex align-items-start justify-content-between">
                 <div>
-                    <div class="stat-card-label">Total Deposits</div>
-                    <div class="stat-card-value">
-                        @Model.CashTransactions.Where(t => t.Type == PortfolioTracker.Models.TransactionType.Deposit).Sum(t => t.Amount).ToString("C0")
-                    </div>
-                    <div class="stat-card-sub">@Model.CashTransactions.Count(t => t.Type == PortfolioTracker.Models.TransactionType.Deposit) deposit(s)</div>
+                    <div class="stat-card-label">Total Cash</div>
+                    <div class="stat-card-value @(Model.TotalCash >= 0 ? "" : "negative")">@Model.TotalCash.ToString("C0")</div>
+                    <div class="stat-card-sub">@Model.LiquidityAccounts.Count account(s)</div>
                 </div>
-                <div class="stat-card-icon" style="background:#dbeafe;">
-                    <i class="fas fa-money-bill-transfer" style="color:#1d4ed8;"></i>
+                <div class="stat-card-icon" style="background:#d1fae5;">
+                    <i class="fas fa-piggy-bank" style="color:#059669;"></i>
                 </div>
             </div>
         </div>
@@ -144,6 +142,62 @@
                 <div class="text-center py-4 text-muted">
                     <i class="fas fa-chart-candlestick fa-2x mb-2 opacity-25"></i>
                     <p class="mb-0">No open stock positions. <a asp-controller="StockTrades" asp-action="Create">Add a trade</a>.</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Cash Accounts -->
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="data-table">
+            <div class="data-table-header">
+                <span class="data-table-title">Cash Accounts</span>
+                <a asp-controller="LiquidityAccounts" asp-action="Create" class="btn btn-primary btn-sm">
+                    <i class="fas fa-plus me-1"></i>Add Account
+                </a>
+            </div>
+            @if (Model.LiquidityAccounts.Any())
+            {
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Account</th>
+                            <th class="text-end">Balance</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var a in Model.LiquidityAccounts.OrderBy(a => a.Name))
+                        {
+                            var bal = a.Movements.Sum(m => m.Amount);
+                            <tr>
+                                <td class="fw-semibold">
+                                    <a asp-controller="LiquidityMovements" asp-action="Index" asp-route-accountId="@a.Id"
+                                       class="text-decoration-none">
+                                        <i class="fas fa-piggy-bank text-muted me-2"></i>@a.Name
+                                    </a>
+                                </td>
+                                <td class="text-end fw-semibold @(bal >= 0 ? "positive" : "negative")">@bal.ToString("C2")</td>
+                                <td class="text-muted" style="font-size:0.82rem;">@a.Notes</td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr style="background:#f8fafc;">
+                            <td class="fw-bold">Total</td>
+                            <td class="text-end fw-bold @(Model.TotalCash >= 0 ? "positive" : "negative")">@Model.TotalCash.ToString("C2")</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            }
+            else
+            {
+                <div class="text-center py-4 text-muted">
+                    <i class="fas fa-piggy-bank fa-2x mb-2 opacity-25"></i>
+                    <p class="mb-0">No cash accounts yet. <a asp-controller="LiquidityAccounts" asp-action="Create">Add your first account</a>.</p>
                 </div>
             }
         </div>
