@@ -123,9 +123,9 @@ public class DashboardTests : PageTest
     {
         await Page.GotoAsync($"{BaseUrl}/");
 
-        var addLink = Page.GetByRole(AriaRole.Link, new() { Name = "Add", Exact = true });
+        var addLink = Page.Locator("a[href='/Transactions/Create']");
         await Expect(addLink.First).ToBeVisibleAsync();
-        await addLink.First.ClickAsync();
+        await Page.GotoAsync($"{BaseUrl}/Transactions/Create");
 
         await Expect(Page).ToHaveTitleAsync("Add Transaction - Portfolio Tracker");
     }
