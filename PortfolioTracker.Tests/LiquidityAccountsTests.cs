@@ -29,7 +29,7 @@ public class LiquidityAccountsTests : PageTest
     {
         await Page.GotoAsync($"{BaseUrl}/LiquidityAccounts");
 
-        await Expect(Page.GetByText("Cash Accounts")).ToBeVisibleAsync();
+        await Expect(Page.GetByText("Cash Accounts").First).ToBeVisibleAsync();
         await Expect(Page.GetByRole(AriaRole.Link, new() { Name = "Add Account" })).ToBeVisibleAsync();
     }
 
@@ -70,7 +70,7 @@ public class LiquidityAccountsTests : PageTest
         await row.GetByRole(AriaRole.Link).Last.ClickAsync();
 
         // Confirm deletion
-        await Page.GetByRole(AriaRole.Button, new() { Name = "Delete" }).ClickAsync();
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Yes, Delete" }).ClickAsync();
 
         await Page.GotoAsync($"{BaseUrl}/LiquidityAccounts");
         await Expect(Page.GetByText("Delete Account Test")).Not.ToBeVisibleAsync();

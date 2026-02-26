@@ -29,7 +29,7 @@ public class MonthlyBalancesTests : PageTest
     {
         await Page.GotoAsync($"{BaseUrl}/MonthlyBalances");
 
-        await Expect(Page.GetByText("Monthly Balances")).ToBeVisibleAsync();
+        await Expect(Page.GetByText("Monthly Balances").First).ToBeVisibleAsync();
         await Expect(Page.GetByRole(AriaRole.Link, new() { Name = "Add Balance" })).ToBeVisibleAsync();
     }
 
@@ -52,6 +52,7 @@ public class MonthlyBalancesTests : PageTest
         formData.Set("Year", "2024");
         formData.Set("Month", "6");
         formData.Set("Balance", "75000");
+        formData.Set("BrokerId", "1");
         await PostWithTokenAsync($"{BaseUrl}/MonthlyBalances/Create", formData);
 
         await Page.GotoAsync($"{BaseUrl}/MonthlyBalances");
@@ -66,6 +67,7 @@ public class MonthlyBalancesTests : PageTest
         formData.Set("Year", "2023");
         formData.Set("Month", "12");
         formData.Set("Balance", "99999");
+        formData.Set("BrokerId", "1");
         await PostWithTokenAsync($"{BaseUrl}/MonthlyBalances/Create", formData);
 
         await Page.GotoAsync($"{BaseUrl}/MonthlyBalances");
@@ -90,6 +92,7 @@ public class MonthlyBalancesTests : PageTest
         formData.Set("Year", "2024");
         formData.Set("Month", "3");
         formData.Set("Balance", "50000");
+        formData.Set("BrokerId", "1");
         await PostWithTokenAsync($"{BaseUrl}/MonthlyBalances/Create", formData);
 
         await Page.GotoAsync($"{BaseUrl}/MonthlyBalances");

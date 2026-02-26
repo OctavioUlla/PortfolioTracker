@@ -29,7 +29,7 @@ public class StockTradesTests : PageTest
     {
         await Page.GotoAsync($"{BaseUrl}/StockTrades");
 
-        await Expect(Page.GetByText("Stock Trades")).ToBeVisibleAsync();
+        await Expect(Page.GetByText("Stock Trades").First).ToBeVisibleAsync();
         await Expect(Page.GetByRole(AriaRole.Link, new() { Name = "Add Trade" })).ToBeVisibleAsync();
     }
 
@@ -57,6 +57,7 @@ public class StockTradesTests : PageTest
         formData.Set("Quantity", "10");
         formData.Set("Price", "175.50");
         formData.Set("Commission", "0");
+        formData.Set("BrokerId", "1");
         await PostWithTokenAsync($"{BaseUrl}/StockTrades/Create", formData);
 
         await Page.GotoAsync($"{BaseUrl}/StockTrades");
@@ -74,6 +75,7 @@ public class StockTradesTests : PageTest
         formData.Set("Quantity", "5");
         formData.Set("Price", "400.00");
         formData.Set("Commission", "0");
+        formData.Set("BrokerId", "1");
         await PostWithTokenAsync($"{BaseUrl}/StockTrades/Create", formData);
 
         await Page.GotoAsync($"{BaseUrl}/StockTrades");
@@ -101,6 +103,7 @@ public class StockTradesTests : PageTest
         formData.Set("Quantity", "2");
         formData.Set("Price", "170.00");
         formData.Set("Commission", "0");
+        formData.Set("BrokerId", "1");
         await PostWithTokenAsync($"{BaseUrl}/StockTrades/Create", formData);
 
         await Page.GotoAsync($"{BaseUrl}/StockTrades");
@@ -122,6 +125,7 @@ public class StockTradesTests : PageTest
         formData.Set("Quantity", "3");
         formData.Set("Price", "500.00");
         formData.Set("Commission", "0");
+        formData.Set("BrokerId", "1");
         await PostWithTokenAsync($"{BaseUrl}/StockTrades/Create", formData);
 
         await Page.GotoAsync($"{BaseUrl}/StockTrades");

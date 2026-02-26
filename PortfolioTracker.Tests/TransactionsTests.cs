@@ -53,6 +53,7 @@ public class TransactionsTests : PageTest
         formData.Set("Type", "0");
         formData.Set("Amount", "3000");
         formData.Set("SP500Price", "5000");
+        formData.Set("BrokerId", "1");
         await PostWithTokenAsync($"{BaseUrl}/Transactions/Create", formData);
 
         await Page.GotoAsync($"{BaseUrl}/Transactions");
@@ -69,6 +70,7 @@ public class TransactionsTests : PageTest
         formData.Set("Amount", "9999");
         formData.Set("SP500Price", "4800");
         formData.Set("Notes", "Playwright Delete Test");
+        formData.Set("BrokerId", "1");
         await PostWithTokenAsync($"{BaseUrl}/Transactions/Create", formData);
 
         await Page.GotoAsync($"{BaseUrl}/Transactions");
@@ -94,6 +96,7 @@ public class TransactionsTests : PageTest
         formData.Set("Type", "0");
         formData.Set("Amount", "1234");
         formData.Set("SP500Price", "5100");
+        formData.Set("BrokerId", "1");
         await PostWithTokenAsync($"{BaseUrl}/Transactions/Create", formData);
 
         await Page.GotoAsync($"{BaseUrl}/Transactions");
@@ -113,6 +116,7 @@ public class TransactionsTests : PageTest
         formData.Set("Type", "0");
         formData.Set("Amount", "500");
         formData.Set("SP500Price", "5200");
+        formData.Set("BrokerId", "1");
         await PostWithTokenAsync($"{BaseUrl}/Transactions/Create", formData);
 
         await Page.GotoAsync($"{BaseUrl}/Transactions");

@@ -23,7 +23,7 @@ public class LiquidityMovementsTests : PageTest
 
         await Page.GotoAsync($"{BaseUrl}/LiquidityAccounts");
         var row = Page.Locator("tr", new() { HasText = name });
-        var editLink = await row.GetByRole(AriaRole.Link).First.GetAttributeAsync("href");
+        var editLink = await row.GetByRole(AriaRole.Link).Nth(1).GetAttributeAsync("href");
         // href is /LiquidityAccounts/Edit/123 — extract the id
         return editLink?.Split('/').Last();
     }
@@ -49,7 +49,7 @@ public class LiquidityMovementsTests : PageTest
     {
         await Page.GotoAsync($"{BaseUrl}/LiquidityMovements");
 
-        await Expect(Page.GetByText("Cash Movements")).ToBeVisibleAsync();
+        await Expect(Page.GetByText("Cash Movements").First).ToBeVisibleAsync();
         await Expect(Page.GetByRole(AriaRole.Link, new() { Name = "Add Movement" })).ToBeVisibleAsync();
     }
 
@@ -102,7 +102,7 @@ public class LiquidityMovementsTests : PageTest
         await row.GetByRole(AriaRole.Link).Last.ClickAsync();
 
         // Confirm deletion
-        await Page.GetByRole(AriaRole.Button, new() { Name = "Delete" }).ClickAsync();
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Yes, Delete" }).ClickAsync();
 
         await Page.GotoAsync($"{BaseUrl}/LiquidityMovements");
         await Expect(Page.GetByText("$7,777.00")).Not.ToBeVisibleAsync();

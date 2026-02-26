@@ -39,7 +39,7 @@ public class DashboardTests : PageTest
     {
         await Page.GotoAsync($"{BaseUrl}/");
 
-        await Expect(Page.GetByText("Cash Accounts")).ToBeVisibleAsync();
+        await Expect(Page.GetByText("Cash Accounts").First).ToBeVisibleAsync();
     }
 
     [Test]
