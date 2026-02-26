@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Playwright Tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore dependencies (app)
+        run: dotnet restore PortfolioTracker.csproj
+
+      - name: Build app
+        run: dotnet build PortfolioTracker.csproj --configuration Release --no-restore
+
+      - name: Restore dependencies (tests)
+        run: dotnet restore PortfolioTracker.Tests/PortfolioTracker.Tests.csproj
+
+      - name: Build tests
+        run: dotnet build PortfolioTracker.Tests/PortfolioTracker.Tests.csproj --configuration Debug --no-restore
+
+      - name: Install Playwright browsers
+        run: pwsh PortfolioTracker.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps
+
+      - name: Start app
+        run: |
+          dotnet run --project PortfolioTracker.csproj --configuration Release --no-build &
+          APP_PID=$!
+          echo "APP_PID=$APP_PID" >> $GITHUB_ENV
+
+      - name: Wait for app to be ready
+        run: |
+          for i in {1..30}; do
+            if curl -sf http://localhost:5285 > /dev/null 2>&1; then
+              echo "App is ready"
+              exit 0
+            fi
+            echo "Waiting... ($i/30)"
+            sleep 2
+          done
+          echo "App did not start in time"
+          exit 1
+
+      - name: Run Playwright tests
+        run: dotnet test PortfolioTracker.Tests/PortfolioTracker.Tests.csproj --configuration Debug --no-build
+
+      - name: Stop app
+        if: always()
+        run: kill $APP_PID || true
