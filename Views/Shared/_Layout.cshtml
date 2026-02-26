@@ -452,6 +452,13 @@
                 Dashboard
             </a>
         </li>
+        <li class="sidebar-nav-item">
+            <a class="sidebar-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Goals" ? "active" : "")"
+               asp-controller="Goals" asp-action="Index">
+                <span class="nav-icon"><i class="fas fa-bullseye"></i></span>
+                Goals &amp; Projections
+            </a>
+        </li>
     </ul>
 
     <div class="sidebar-section-title">Data Entry</div>

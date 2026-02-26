@@ -1,0 +1,369 @@
+@model PortfolioTracker.Models.GoalsViewModel
+@{
+    ViewData["Title"] = "Goals & Projections";
+}
+
+<!-- Summary Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-start justify-content-between">
+                <div>
+                    <div class="stat-card-label">Current Value</div>
+                    <div class="stat-card-value">@Model.CurrentPortfolioValue.ToString("C0")</div>
+                    <div class="stat-card-sub">Latest portfolio balance</div>
+                </div>
+                <div class="stat-card-icon" style="background:#ede9fe;">
+                    <i class="fas fa-wallet" style="color:#7c3aed;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-start justify-content-between">
+                <div>
+                    <div class="stat-card-label">Lifetime IRR</div>
+                    <div class="stat-card-value @(Model.LifetimeIRR >= 0 ? "positive" : "negative")">
+                        @Model.LifetimeIRR.ToString("F2")%
+                    </div>
+                    <div class="stat-card-sub">Used for projections</div>
+                </div>
+                <div class="stat-card-icon" style="background:#dcfce7;">
+                    <i class="fas fa-percent" style="color:#15803d;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-start justify-content-between">
+                <div>
+                    <div class="stat-card-label">Avg Monthly Deposit</div>
+                    <div class="stat-card-value">@Model.AverageMonthlyDeposit.ToString("C0")</div>
+                    <div class="stat-card-sub">Based on history</div>
+                </div>
+                <div class="stat-card-icon" style="background:#dbeafe;">
+                    <i class="fas fa-arrow-up" style="color:#2563eb;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-start justify-content-between">
+                <div>
+                    <div class="stat-card-label">Active Goals</div>
+                    <div class="stat-card-value">@Model.Goals.Count</div>
+                    <div class="stat-card-sub">Portfolio targets</div>
+                </div>
+                <div class="stat-card-icon" style="background:#fef3c7;">
+                    <i class="fas fa-bullseye" style="color:#b45309;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Projection Chart -->
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="chart-card">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h6 class="chart-card-title mb-0">Portfolio Projection</h6>
+                <div class="d-flex gap-3" style="font-size:0.8rem;">
+                    <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#6366f1;margin-right:4px;"></span>Historical</span>
+                    <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#f59e0b;margin-right:4px;"></span>Projection</span>
+                    <span><span style="display:inline-block;width:3px;height:12px;border-radius:2px;background:#ef4444;margin-right:4px;"></span>Goals</span>
+                </div>
+            </div>
+            <canvas id="projectionChart" height="100"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Scenario Parameters & Goals -->
+<div class="row g-3 mb-4">
+    <div class="col-lg-5">
+        <div class="chart-card h-100">
+            <h6 class="chart-card-title">Scenario Parameters</h6>
+            <p class="text-muted" style="font-size:0.8rem;">Adjust the monthly deposit and IRR to explore different future scenarios. The chart will update live.</p>
+
+            <div class="mb-3">
+                <label class="form-label">Monthly Deposit ($)</label>
+                <input type="number" class="form-control" id="scenarioDeposit" step="100" min="0"
+                       value="@Model.AverageMonthlyDeposit.ToString("F0", System.Globalization.CultureInfo.InvariantCulture)" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Annual IRR (%)</label>
+                <input type="number" class="form-control" id="scenarioIRR" step="0.5" 
+                       value="@Model.LifetimeIRR.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)" />
+            </div>
+
+            <button class="btn btn-primary w-100" id="btnRecalculate" onclick="recalculate()">
+                <i class="fas fa-calculator me-2"></i>Recalculate Projection
+            </button>
+
+            <hr class="my-3">
+            <h6 class="chart-card-title">Add New Goal</h6>
+            <form asp-controller="Goals" asp-action="Create" method="post">
+                <div class="mb-2">
+                    <label class="form-label">Goal Name</label>
+                    <input type="text" class="form-control" name="Name" required placeholder="e.g. Retirement Fund" />
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Target Value ($)</label>
+                    <input type="number" class="form-control" name="TargetValue" step="1000" min="1" required placeholder="100000" />
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Target Date</label>
+                    <input type="date" class="form-control" name="TargetDate" required value="@DateTime.Today.AddYears(5).ToString("yyyy-MM-dd")" />
+                </div>
+                <button type="submit" class="btn btn-primary w-100 mt-2">
+                    <i class="fas fa-plus me-2"></i>Add Goal
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        <div class="data-table h-100">
+            <div class="data-table-header">
+                <span class="data-table-title">Your Goals</span>
+            </div>
+            @if (Model.Goals.Any())
+            {
+                <table class="table" id="goalsTable">
+                    <thead>
+                        <tr>
+                            <th>Goal</th>
+                            <th class="text-end">Target</th>
+                            <th>Date</th>
+                            <th class="text-end">Projected</th>
+                            <th>Status</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var g in Model.Goals)
+                        {
+                            <tr data-goal-id="@g.Id">
+                                <td class="fw-semibold">@g.Name</td>
+                                <td class="text-end fw-semibold">@g.TargetValue.ToString("C0")</td>
+                                <td>@g.TargetDate.ToString("MMM yyyy")</td>
+                                <td class="text-end goal-projected">—</td>
+                                <td class="goal-status">—</td>
+                                <td>
+                                    <form asp-controller="Goals" asp-action="Delete" method="post" class="d-inline">
+                                        <input type="hidden" name="id" value="@g.Id" />
+                                        <button type="submit" class="btn btn-sm" style="color:#b91c1c;" title="Delete"
+                                                onclick="return confirm('Delete this goal?')">
+                                            <i class="fas fa-trash-can"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="text-center py-5 text-muted">
+                    <i class="fas fa-bullseye fa-3x mb-3 opacity-25"></i>
+                    <p>No goals set yet. Add your first goal using the form.</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+@Html.AntiForgeryToken()
+<script>
+    // Historical data
+    const histLabels = [@Html.Raw(Model.HistoricalChartLabels)];
+    const histData = [@Html.Raw(Model.HistoricalChartData)];
+    // Initial projection data
+    let projLabels = [@Html.Raw(Model.ProjectionChartLabels)];
+    let projData = [@Html.Raw(Model.ProjectionChartData)];
+
+    // Goals for annotation lines
+    const goals = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Goals.Select(g => new {
+        g.Id, g.Name, g.TargetValue,
+        TargetDate = g.TargetDate.ToString("yyyy-MM")
+    })));
+
+    const allLabels = [...histLabels, ...projLabels];
+    const historicalDataset = histData.concat(new Array(projLabels.length).fill(null));
+    let projectionDataset = new Array(histLabels.length).fill(null).concat(projData);
+    // Bridge: last historical value connects to first projection
+    if (histData.length > 0 && projData.length > 0) {
+        projectionDataset[histLabels.length - 1] = histData[histData.length - 1];
+    }
+
+    const ctx = document.getElementById('projectionChart').getContext('2d');
+    const chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: allLabels,
+            datasets: [
+                {
+                    label: 'Historical',
+                    data: historicalDataset,
+                    borderColor: '#6366f1',
+                    backgroundColor: 'rgba(99,102,241,0.08)',
+                    borderWidth: 2.5,
+                    pointRadius: 2,
+                    fill: true,
+                    tension: 0.3,
+                },
+                {
+                    label: 'Projection',
+                    data: projectionDataset,
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245,158,11,0.06)',
+                    borderWidth: 2,
+                    borderDash: [6, 3],
+                    pointRadius: 0,
+                    fill: true,
+                    tension: 0.3,
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => ctx.dataset.label + ': $' + (ctx.parsed.y ?? 0).toLocaleString('en-US', { minimumFractionDigits: 0 })
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: {
+                        font: { size: 10 },
+                        maxTicksLimit: 20,
+                        maxRotation: 45
+                    }
+                },
+                y: {
+                    grid: { color: '#f1f5f9' },
+                    ticks: {
+                        font: { size: 11 },
+                        callback: v => '$' + v.toLocaleString()
+                    }
+                }
+            }
+        }
+    });
+
+    // Add goal annotations as horizontal line datasets
+    addGoalAnnotations();
+
+    function addGoalAnnotations() {
+        // Remove old goal datasets (keep first two: historical + projection)
+        chart.data.datasets.splice(2);
+        const goalColors = ['#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
+        goals.forEach((g, i) => {
+            const color = goalColors[i % goalColors.length];
+            const goalData = allLabels.map(() => g.TargetValue);
+            chart.data.datasets.push({
+                label: g.Name + ' Goal',
+                data: goalData,
+                borderColor: color,
+                borderWidth: 1.5,
+                borderDash: [4, 4],
+                pointRadius: 0,
+                fill: false,
+                tension: 0,
+            });
+        });
+        chart.update();
+    }
+
+    // Initial goal status calculation via API
+    recalculate();
+
+    async function recalculate() {
+        const deposit = document.getElementById('scenarioDeposit').value;
+        const irr = document.getElementById('scenarioIRR').value;
+        const btn = document.getElementById('btnRecalculate');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Calculating...';
+
+        try {
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            const params = new URLSearchParams({ monthlyDeposit: deposit, annualIRR: irr });
+            const resp = await fetch('/Goals/Extrapolate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': token
+                },
+                body: params.toString()
+            });
+            const result = await resp.json();
+
+            // Update projection dataset
+            projLabels = result.labels;
+            projData = result.data;
+            const newAllLabels = [...histLabels, ...projLabels];
+            const newHistDataset = histData.concat(new Array(projLabels.length).fill(null));
+            const newProjDataset = new Array(histLabels.length).fill(null).concat(projData);
+            if (histData.length > 0 && projData.length > 0) {
+                newProjDataset[histLabels.length - 1] = histData[histData.length - 1];
+            }
+
+            chart.data.labels = newAllLabels;
+            chart.data.datasets[0].data = newHistDataset;
+            chart.data.datasets[1].data = newProjDataset;
+
+            // Re-add goal annotations with new label range
+            chart.data.datasets.splice(2);
+            const goalColors = ['#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
+            goals.forEach((g, i) => {
+                const color = goalColors[i % goalColors.length];
+                const goalData = newAllLabels.map(() => g.TargetValue);
+                chart.data.datasets.push({
+                    label: g.Name + ' Goal',
+                    data: goalData,
+                    borderColor: color,
+                    borderWidth: 1.5,
+                    borderDash: [4, 4],
+                    pointRadius: 0,
+                    fill: false,
+                    tension: 0,
+                });
+            });
+            chart.update();
+
+            // Update goal statuses in table
+            if (result.goals) {
+                result.goals.forEach(gs => {
+                    const row = document.querySelector(`tr[data-goal-id="${gs.id}"]`);
+                    if (row) {
+                        row.querySelector('.goal-projected').textContent = '$' + gs.projectedValue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+                        const statusCell = row.querySelector('.goal-status');
+                        if (gs.onTrack) {
+                            statusCell.innerHTML = '<span class="badge-deposit"><i class="fas fa-check me-1"></i>On Track</span>';
+                        } else {
+                            statusCell.innerHTML = '<span class="badge-withdrawal"><i class="fas fa-xmark me-1"></i>Behind</span>' +
+                                '<div style="font-size:0.7rem;color:#64748b;margin-top:2px;">Need ~' + gs.monthsNeeded + ' months (' + gs.estimatedDate + ')</div>';
+                        }
+                    }
+                });
+            }
+        } catch (e) {
+            alert('Error recalculating: ' + e.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-calculator me-2"></i>Recalculate Projection';
+        }
+    }
+</script>
+}
