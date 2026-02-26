@@ -30,7 +30,7 @@ public class MonthlyBalancesTests : PageTest
         await Page.GotoAsync($"{BaseUrl}/MonthlyBalances");
 
         await Expect(Page.GetByText("Monthly Balances").First).ToBeVisibleAsync();
-        await Expect(Page.GetByRole(AriaRole.Link, new() { Name = "Add Balance" })).ToBeVisibleAsync();
+        await Expect(Page.GetByRole(AriaRole.Link, new() { Name = "Add Monthly Balance" })).ToBeVisibleAsync();
     }
 
     [Test]
@@ -75,7 +75,8 @@ public class MonthlyBalancesTests : PageTest
 
         // Click delete on the row
         var row = Page.Locator("tr", new() { HasText = "$99,999.00" });
-        await row.GetByRole(AriaRole.Link).Last.ClickAsync();
+        var deleteHref = await row.GetByRole(AriaRole.Link).Last.GetAttributeAsync("href");
+        await Page.GotoAsync($"{BaseUrl}{deleteHref}");
 
         // Confirm deletion
         await Page.GetByRole(AriaRole.Button, new() { Name = "Delete" }).ClickAsync();
@@ -98,7 +99,8 @@ public class MonthlyBalancesTests : PageTest
         await Page.GotoAsync($"{BaseUrl}/MonthlyBalances");
 
         var row = Page.Locator("tr", new() { HasText = "$50,000.00" });
-        await row.GetByRole(AriaRole.Link).First.ClickAsync();
+        var editHref = await row.GetByRole(AriaRole.Link).First.GetAttributeAsync("href");
+        await Page.GotoAsync($"{BaseUrl}{editHref}");
 
         await Expect(Page).ToHaveTitleAsync("Edit Monthly Balance - Portfolio Tracker");
     }

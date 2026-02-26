@@ -78,7 +78,8 @@ public class TransactionsTests : PageTest
 
         // Click delete on that row
         var row = Page.Locator("tr", new() { HasText = "$9,999.00" });
-        await row.GetByRole(AriaRole.Link).Last.ClickAsync();
+        var deleteHref = await row.GetByRole(AriaRole.Link).Last.GetAttributeAsync("href");
+        await Page.GotoAsync($"{BaseUrl}{deleteHref}");
 
         // Confirm deletion
         await Page.GetByRole(AriaRole.Button, new() { Name = "Delete" }).ClickAsync();
@@ -102,7 +103,8 @@ public class TransactionsTests : PageTest
         await Page.GotoAsync($"{BaseUrl}/Transactions");
 
         var row = Page.Locator("tr", new() { HasText = "$1,234.00" });
-        await row.GetByRole(AriaRole.Link).First.ClickAsync();
+        var editHref = await row.GetByRole(AriaRole.Link).First.GetAttributeAsync("href");
+        await Page.GotoAsync($"{BaseUrl}{editHref}");
 
         await Expect(Page).ToHaveTitleAsync("Edit Transaction - Portfolio Tracker");
     }

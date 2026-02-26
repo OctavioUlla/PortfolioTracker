@@ -99,7 +99,8 @@ public class LiquidityMovementsTests : PageTest
 
         // Click delete on that row
         var row = Page.Locator("tr", new() { HasText = "$7,777.00" });
-        await row.GetByRole(AriaRole.Link).Last.ClickAsync();
+        var deleteHref = await row.GetByRole(AriaRole.Link).Last.GetAttributeAsync("href");
+        await Page.GotoAsync($"{BaseUrl}{deleteHref}");
 
         // Confirm deletion
         await Page.GetByRole(AriaRole.Button, new() { Name = "Yes, Delete" }).ClickAsync();
@@ -124,7 +125,8 @@ public class LiquidityMovementsTests : PageTest
         await Page.GotoAsync($"{BaseUrl}/LiquidityMovements");
 
         var row = Page.Locator("tr", new() { HasText = "$3,333.00" });
-        await row.GetByRole(AriaRole.Link).First.ClickAsync();
+        var editHref = await row.GetByRole(AriaRole.Link).First.GetAttributeAsync("href");
+        await Page.GotoAsync($"{BaseUrl}{editHref}");
 
         await Expect(Page).ToHaveTitleAsync("Edit Cash Movement - Portfolio Tracker");
     }

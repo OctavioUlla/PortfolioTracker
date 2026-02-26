@@ -20,7 +20,7 @@ public class DashboardTests : PageTest
     {
         await Page.GotoAsync($"{BaseUrl}/");
 
-        await Expect(Page.GetByText("Portfolio Value")).ToBeVisibleAsync();
+        await Expect(Page.GetByText("Portfolio Value").First).ToBeVisibleAsync();
         await Expect(Page.GetByText("Lifetime IRR")).ToBeVisibleAsync();
         await Expect(Page.GetByText("S&P 500 Virtual Value")).ToBeVisibleAsync();
         await Expect(Page.GetByText("Total Cash")).ToBeVisibleAsync();
@@ -123,7 +123,7 @@ public class DashboardTests : PageTest
     {
         await Page.GotoAsync($"{BaseUrl}/");
 
-        var addLink = Page.GetByRole(AriaRole.Link, new() { Name = "Add" });
+        var addLink = Page.GetByRole(AriaRole.Link, new() { Name = "Add", Exact = true });
         await Expect(addLink.First).ToBeVisibleAsync();
         await addLink.First.ClickAsync();
 

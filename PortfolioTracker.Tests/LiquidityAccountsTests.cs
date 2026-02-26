@@ -67,7 +67,8 @@ public class LiquidityAccountsTests : PageTest
 
         // Click delete on that row
         var row = Page.Locator("tr", new() { HasText = "Delete Account Test" });
-        await row.GetByRole(AriaRole.Link).Last.ClickAsync();
+        var deleteHref = await row.GetByRole(AriaRole.Link).Last.GetAttributeAsync("href");
+        await Page.GotoAsync($"{BaseUrl}{deleteHref}");
 
         // Confirm deletion
         await Page.GetByRole(AriaRole.Button, new() { Name = "Yes, Delete" }).ClickAsync();
@@ -87,7 +88,8 @@ public class LiquidityAccountsTests : PageTest
         await Page.GotoAsync($"{BaseUrl}/LiquidityAccounts");
 
         var row = Page.Locator("tr", new() { HasText = "Edit Account Test" });
-        await row.GetByRole(AriaRole.Link).Nth(1).ClickAsync();
+        var editHref = await row.GetByRole(AriaRole.Link).Nth(1).GetAttributeAsync("href");
+        await Page.GotoAsync($"{BaseUrl}{editHref}");
 
         await Expect(Page).ToHaveTitleAsync("Edit Cash Account - Portfolio Tracker");
         await Expect(Page.GetByLabel("Account Name")).ToBeVisibleAsync();

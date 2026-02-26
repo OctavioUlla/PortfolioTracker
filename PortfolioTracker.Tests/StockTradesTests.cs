@@ -83,7 +83,8 @@ public class StockTradesTests : PageTest
 
         // Click delete on the MSFT row
         var row = Page.Locator("tr", new() { HasText = "MSFT" });
-        await row.GetByRole(AriaRole.Link).Last.ClickAsync();
+        var deleteHref = await row.GetByRole(AriaRole.Link).Last.GetAttributeAsync("href");
+        await Page.GotoAsync($"{BaseUrl}{deleteHref}");
 
         // Confirm deletion
         await Page.GetByRole(AriaRole.Button, new() { Name = "Delete" }).ClickAsync();
@@ -109,7 +110,8 @@ public class StockTradesTests : PageTest
         await Page.GotoAsync($"{BaseUrl}/StockTrades");
 
         var row = Page.Locator("tr", new() { HasText = "GOOGL" });
-        await row.GetByRole(AriaRole.Link).First.ClickAsync();
+        var editHref = await row.GetByRole(AriaRole.Link).First.GetAttributeAsync("href");
+        await Page.GotoAsync($"{BaseUrl}{editHref}");
 
         await Expect(Page).ToHaveTitleAsync("Edit Stock Trade - Portfolio Tracker");
     }

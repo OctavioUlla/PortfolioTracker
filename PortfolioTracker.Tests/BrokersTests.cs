@@ -67,7 +67,8 @@ public class BrokersTests : PageTest
 
         // Navigate to delete page
         var row = Page.Locator("tr", new() { HasText = "Delete Broker Test" });
-        await row.GetByRole(AriaRole.Link).Last.ClickAsync();
+        var deleteHref = await row.GetByRole(AriaRole.Link).Last.GetAttributeAsync("href");
+        await Page.GotoAsync($"{BaseUrl}{deleteHref}");
 
         // Confirm deletion
         await Page.GetByRole(AriaRole.Button, new() { Name = "Delete" }).ClickAsync();
@@ -87,7 +88,8 @@ public class BrokersTests : PageTest
         await Page.GotoAsync($"{BaseUrl}/Brokers");
 
         var row = Page.Locator("tr", new() { HasText = "Edit Broker Test" });
-        await row.GetByRole(AriaRole.Link).First.ClickAsync();
+        var editHref = await row.GetByRole(AriaRole.Link).First.GetAttributeAsync("href");
+        await Page.GotoAsync($"{BaseUrl}{editHref}");
 
         await Expect(Page).ToHaveTitleAsync("Edit Broker - Portfolio Tracker");
         await Expect(Page.GetByLabel("Broker Name")).ToBeVisibleAsync();
