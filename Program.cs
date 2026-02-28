@@ -8,8 +8,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Host.UseWindowsService();
 
 builder.Services.AddControllersWithViews();
+var dbPath = Path.Combine(AppContext.BaseDirectory, "portfolio.db");
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite("Data Source=portfolio.db"));
+    options.UseSqlite($"Data Source={dbPath}"));
 builder.Services.AddScoped<ExcelImportService>();
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
