@@ -5,6 +5,7 @@ using PortfolioTracker.Data;
 using PortfolioTracker.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Host.UseWindowsService();
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddDbContext<AppDbContext>(options =>
