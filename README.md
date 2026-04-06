@@ -80,6 +80,58 @@ The latest Windows release is available on the [Releases](https://github.com/Oct
 
 ---
 
+## MCP Server (AI Integration)
+
+The MCP (Model Context Protocol) server is built directly into the main `PortfolioTracker` application — no separate executable is needed. When the app is running, an MCP endpoint is available at `/mcp` on the same port as the web UI, so AI assistants like **Claude** can read and update your portfolio directly.
+
+### Available Tools
+
+| Tool | Description |
+|------|-------------|
+| `GetPortfolioSummary` | Current value, lifetime IRR, total return (% & amount), net deposits, total cash, and stock holdings |
+| `GetStockHoldings` | Current positions with FIFO cost basis and average holding period |
+| `GetTransactions` | List deposits/withdrawals (filterable by type and broker) |
+| `RegisterDeposit` | Add a deposit (include the S&P 500 price for benchmark comparison) |
+| `RegisterWithdrawal` | Add a withdrawal |
+| `GetStockTrades` | List stock trades (filterable by ticker, type, and broker) |
+| `RegisterStockTrade` | Register a buy or sell trade |
+| `GetLiquidityAccounts` | List cash accounts with current balances and recent movements |
+| `RegisterCashMovement` | Add a cash movement (positive = deposit, negative = withdrawal) |
+| `GetBrokers` | List all registered brokers |
+| `GetMonthlyBalances` | List monthly portfolio balance records (filterable by broker and year) |
+| `RegisterMonthlyBalance` | Add or update a monthly balance (upserts by year/month/broker) |
+
+### Claude Desktop Setup
+
+With the app running (default `http://localhost:5285`), configure Claude Desktop to connect to it over HTTP:
+
+1. Open your Claude Desktop configuration file:
+   - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+   - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+2. Add the following entry:
+
+```json
+{
+  "mcpServers": {
+    "portfolio-tracker": {
+      "url": "http://localhost:5285/mcp"
+    }
+  }
+}
+```
+
+3. Restart Claude Desktop. The PortfolioTracker tools will appear in the tool panel.
+
+### Example Prompts
+
+- *"What is my current portfolio value and IRR?"*
+- *"Show me my current stock holdings."*
+- *"Register a deposit of $5,000 on 2024-03-15 with S&P 500 price 5,150."*
+- *"Add a buy trade: 10 shares of AAPL at $175.50 on 2024-03-15."*
+- *"Register a cash movement of -$1,000 in my savings account."*
+
+---
+
 ## CD Pipeline
 
 The repository includes a GitHub Actions workflow (`.github/workflows/cd.yml`) that triggers on every push to `main` (and supports manual dispatch via `workflow_dispatch`):

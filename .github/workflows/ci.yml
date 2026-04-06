@@ -10,7 +10,31 @@ on:
   workflow_dispatch:
 
 jobs:
-  test:
+  mcp-tests:
+    name: MCP Tools Tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies (MCP server tests)
+        run: dotnet restore PortfolioTracker.McpServer.Tests/PortfolioTracker.McpServer.Tests.csproj
+
+      - name: Build MCP server tests
+        run: dotnet build PortfolioTracker.McpServer.Tests/PortfolioTracker.McpServer.Tests.csproj --configuration Debug --no-restore
+
+      - name: Run MCP tools tests
+        run: dotnet test PortfolioTracker.McpServer.Tests/PortfolioTracker.McpServer.Tests.csproj --configuration Debug --no-build
+
+  playwright-tests:
     name: Playwright Tests
     runs-on: ubuntu-latest
     permissions:
