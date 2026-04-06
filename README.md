@@ -80,6 +80,93 @@ The latest Windows release is available on the [Releases](https://github.com/Oct
 
 ---
 
+## MCP Server (AI Integration)
+
+The `PortfolioTracker.McpServer/` project exposes all portfolio data and operations as [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) tools, so AI assistants like **Claude** can read and update your portfolio directly.
+
+### Available Tools
+
+| Tool | Description |
+|------|-------------|
+| `GetPortfolioSummary` | Current value, lifetime IRR, total return (% & amount), net deposits, total cash, and stock holdings |
+| `GetStockHoldings` | Current positions with FIFO cost basis and average holding period |
+| `GetTransactions` | List deposits/withdrawals (filterable by type and broker) |
+| `RegisterDeposit` | Add a deposit (include the S&P 500 price for benchmark comparison) |
+| `RegisterWithdrawal` | Add a withdrawal |
+| `GetStockTrades` | List stock trades (filterable by ticker, type, and broker) |
+| `RegisterStockTrade` | Register a buy or sell trade |
+| `GetLiquidityAccounts` | List cash accounts with current balances and recent movements |
+| `RegisterCashMovement` | Add a cash movement (positive = deposit, negative = withdrawal) |
+| `GetBrokers` | List all registered brokers |
+| `GetMonthlyBalances` | List monthly portfolio balance records (filterable by broker and year) |
+| `RegisterMonthlyBalance` | Add or update a monthly balance (upserts by year/month/broker) |
+
+### Building
+
+```bash
+cd PortfolioTracker.McpServer
+dotnet build
+```
+
+To produce a self-contained executable:
+
+```bash
+dotnet publish --configuration Release --runtime win-x64 --self-contained true -p:PublishSingleFile=true
+```
+
+Replace `win-x64` with `linux-x64` or `osx-arm64` as appropriate for your platform.
+
+### Configuration
+
+Set the `PORTFOLIO_DB_PATH` environment variable to the full path of your `portfolio.db` file. If not set, the server looks for `portfolio.db` in the current working directory.
+
+### Claude Desktop Setup
+
+1. Build or download the MCP server executable.
+2. Open your Claude Desktop configuration file:
+   - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+   - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+3. Add the following entry (adjust the paths for your system):
+
+```json
+{
+  "mcpServers": {
+    "portfolio-tracker": {
+      "command": "/absolute/path/to/PortfolioTracker.McpServer",
+      "env": {
+        "PORTFOLIO_DB_PATH": "/absolute/path/to/portfolio.db"
+      }
+    }
+  }
+}
+```
+
+> **Windows example**
+> ```json
+> {
+>   "mcpServers": {
+>     "portfolio-tracker": {
+>       "command": "C:\\PortfolioTracker\\PortfolioTracker.McpServer.exe",
+>       "env": {
+>         "PORTFOLIO_DB_PATH": "C:\\PortfolioTracker\\portfolio.db"
+>       }
+>     }
+>   }
+> }
+> ```
+
+4. Restart Claude Desktop. The PortfolioTracker tools will appear in the tool panel.
+
+### Example Prompts
+
+- *"What is my current portfolio value and IRR?"*
+- *"Show me my current stock holdings."*
+- *"Register a deposit of $5,000 on 2024-03-15 with S&P 500 price 5,150."*
+- *"Add a buy trade: 10 shares of AAPL at $175.50 on 2024-03-15."*
+- *"Register a cash movement of -$1,000 in my savings account."*
+
+---
+
 ## CD Pipeline
 
 The repository includes a GitHub Actions workflow (`.github/workflows/cd.yml`) that triggers on every push to `main` (and supports manual dispatch via `workflow_dispatch`):
