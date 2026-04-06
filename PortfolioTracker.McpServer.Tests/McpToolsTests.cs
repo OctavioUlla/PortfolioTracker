@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using PortfolioTracker.Data;
-using PortfolioTracker.McpServer.Tools;
+using PortfolioTracker.Mcp;
 using PortfolioTracker.Models;
 
 namespace PortfolioTracker.McpServer.Tests;

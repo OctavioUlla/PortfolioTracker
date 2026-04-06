@@ -82,7 +82,7 @@ The latest Windows release is available on the [Releases](https://github.com/Oct
 
 ## MCP Server (AI Integration)
 
-The `PortfolioTracker.McpServer/` project exposes all portfolio data and operations as [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) tools, so AI assistants like **Claude** can read and update your portfolio directly.
+The MCP (Model Context Protocol) server is built directly into the main `PortfolioTracker` application — no separate executable is needed. When the app is running, an MCP endpoint is available at `/mcp` on the same port as the web UI, so AI assistants like **Claude** can read and update your portfolio directly.
 
 ### Available Tools
 
@@ -101,61 +101,26 @@ The `PortfolioTracker.McpServer/` project exposes all portfolio data and operati
 | `GetMonthlyBalances` | List monthly portfolio balance records (filterable by broker and year) |
 | `RegisterMonthlyBalance` | Add or update a monthly balance (upserts by year/month/broker) |
 
-### Building
-
-```bash
-cd PortfolioTracker.McpServer
-dotnet build
-```
-
-To produce a self-contained executable:
-
-```bash
-dotnet publish --configuration Release --runtime win-x64 --self-contained true -p:PublishSingleFile=true
-```
-
-Replace `win-x64` with `linux-x64` or `osx-arm64` as appropriate for your platform.
-
-### Configuration
-
-Set the `PORTFOLIO_DB_PATH` environment variable to the full path of your `portfolio.db` file. If not set, the server looks for `portfolio.db` in the current working directory.
-
 ### Claude Desktop Setup
 
-1. Build or download the MCP server executable.
-2. Open your Claude Desktop configuration file:
+With the app running (default `http://localhost:5285`), configure Claude Desktop to connect to it over HTTP:
+
+1. Open your Claude Desktop configuration file:
    - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
    - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
-3. Add the following entry (adjust the paths for your system):
+2. Add the following entry:
 
 ```json
 {
   "mcpServers": {
     "portfolio-tracker": {
-      "command": "/absolute/path/to/PortfolioTracker.McpServer",
-      "env": {
-        "PORTFOLIO_DB_PATH": "/absolute/path/to/portfolio.db"
-      }
+      "url": "http://localhost:5285/mcp"
     }
   }
 }
 ```
 
-> **Windows example**
-> ```json
-> {
->   "mcpServers": {
->     "portfolio-tracker": {
->       "command": "C:\\PortfolioTracker\\PortfolioTracker.McpServer.exe",
->       "env": {
->         "PORTFOLIO_DB_PATH": "C:\\PortfolioTracker\\portfolio.db"
->       }
->     }
->   }
-> }
-> ```
-
-4. Restart Claude Desktop. The PortfolioTracker tools will appear in the tool panel.
+3. Restart Claude Desktop. The PortfolioTracker tools will appear in the tool panel.
 
 ### Example Prompts
 

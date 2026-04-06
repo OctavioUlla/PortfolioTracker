@@ -6,7 +6,7 @@ using PortfolioTracker.Data;
 using PortfolioTracker.Models;
 using PortfolioTracker.Services;
 
-namespace PortfolioTracker.McpServer.Tools;
+namespace PortfolioTracker.Mcp;
 
 [McpServerToolType]
 public class PortfolioTools

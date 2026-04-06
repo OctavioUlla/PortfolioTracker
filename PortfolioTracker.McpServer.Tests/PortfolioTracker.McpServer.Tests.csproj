@@ -18,7 +18,7 @@
 
   <ItemGroup>
     <Using Include="NUnit.Framework" />
-    <ProjectReference Include="..\PortfolioTracker.McpServer\PortfolioTracker.McpServer.csproj" />
+    <ProjectReference Include="..\PortfolioTracker.csproj" />
   </ItemGroup>
 
 </Project>
