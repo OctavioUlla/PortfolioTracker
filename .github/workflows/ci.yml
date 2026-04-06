@@ -32,7 +32,9 @@ jobs:
         run: dotnet build PortfolioTracker.McpServer.Tests/PortfolioTracker.McpServer.Tests.csproj --configuration Debug --no-restore
 
       - name: Run MCP tools tests
-        run: dotnet test PortfolioTracker.McpServer.Tests/PortfolioTracker.McpServer.Tests.csproj --configuration Debug --no-build  playwright-tests:
+        run: dotnet test PortfolioTracker.McpServer.Tests/PortfolioTracker.McpServer.Tests.csproj --configuration Debug --no-build
+
+  playwright-tests:
     name: Playwright Tests
     runs-on: ubuntu-latest
     permissions:
