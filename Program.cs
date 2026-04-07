@@ -4,11 +4,36 @@ using Microsoft.EntityFrameworkCore;
 using PortfolioTracker.Data;
 using PortfolioTracker.Services;
 
+var dbPath = Path.Combine(AppContext.BaseDirectory, "portfolio.db");
+
+if (args.Contains("--mcp"))
+{
+    var mcpBuilder = Host.CreateApplicationBuilder(args);
+    mcpBuilder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseSqlite($"Data Source={dbPath}"));
+    mcpBuilder.Services
+        .AddMcpServer()
+        .WithStdioServerTransport()
+        .WithToolsFromAssembly();
+    mcpBuilder.Logging.AddConsole(opts =>
+        opts.LogToStandardErrorThreshold = LogLevel.Trace);
+
+    var mcpHost = mcpBuilder.Build();
+
+    using (var scope = mcpHost.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        db.Database.Migrate();
+    }
+
+    await mcpHost.RunAsync();
+    return;
+}
+
 var builder = WebApplication.CreateBuilder(args);
 builder.Host.UseWindowsService();
 
 builder.Services.AddControllersWithViews();
-var dbPath = Path.Combine(AppContext.BaseDirectory, "portfolio.db");
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite($"Data Source={dbPath}"));
 builder.Services.AddScoped<ExcelImportService>();
@@ -19,11 +44,6 @@ builder.Services.AddSession(options =>
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
 });
-
-builder.Services
-    .AddMcpServer()
-    .WithHttpTransport()
-    .WithToolsFromAssembly();
 
 var app = builder.Build();
 
@@ -58,7 +78,5 @@ app.UseAuthorization();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Dashboard}/{action=Index}/{id?}");
-
-app.MapMcp("/mcp");
 
 app.Run();
