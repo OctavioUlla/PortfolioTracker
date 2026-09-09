@@ -11,6 +11,7 @@ public class AppDbContext : DbContext
     public DbSet<CashTransaction> CashTransactions { get; set; }
     public DbSet<StockTrade> StockTrades { get; set; }
     public DbSet<MonthlyBalance> MonthlyBalances { get; set; }
+    public DbSet<SP500MonthlyPrice> SP500MonthlyPrices { get; set; }
     public DbSet<LiquidityAccount> LiquidityAccounts { get; set; }
     public DbSet<LiquidityMovement> LiquidityMovements { get; set; }
     public DbSet<Goal> Goals { get; set; }
@@ -33,6 +34,10 @@ public class AppDbContext : DbContext
             .Property(t => t.Commission).HasColumnType("decimal(18,2)");
         modelBuilder.Entity<MonthlyBalance>()
             .Property(t => t.Balance).HasColumnType("decimal(18,2)");
+        modelBuilder.Entity<SP500MonthlyPrice>()
+            .Property(p => p.Price).HasColumnType("decimal(18,2)");
+        modelBuilder.Entity<SP500MonthlyPrice>()
+            .HasIndex(p => new { p.Year, p.Month }).IsUnique();
         modelBuilder.Entity<LiquidityMovement>()
             .Property(t => t.Amount).HasColumnType("decimal(18,2)");
         modelBuilder.Entity<Goal>()

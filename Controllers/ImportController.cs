@@ -101,12 +101,26 @@ public class ImportController : Controller
         _db.CashTransactions.AddRange(preview.CashTransactions);
         _db.StockTrades.AddRange(preview.StockTrades);
         _db.MonthlyBalances.AddRange(preview.MonthlyBalances);
+
+        // Upsert rather than insert: (Year, Month) is unique, so re-importing an overlapping
+        // file would otherwise fail the whole import on a constraint violation.
+        foreach (var price in preview.SP500MonthlyPrices)
+        {
+            var existing = await _db.SP500MonthlyPrices
+                .FirstOrDefaultAsync(p => p.Year == price.Year && p.Month == price.Month);
+            if (existing == null)
+                _db.SP500MonthlyPrices.Add(price);
+            else
+                existing.Price = price.Price;
+        }
+
         await _db.SaveChangesAsync();
 
         TempData["ImportSuccess"] =
             $"Import complete: {preview.CashTransactions.Count} deposits/withdrawals, " +
             $"{preview.StockTrades.Count} stock trades, " +
-            $"{preview.MonthlyBalances.Count} monthly balances.";
+            $"{preview.MonthlyBalances.Count} monthly balances, " +
+            $"{preview.SP500MonthlyPrices.Count} monthly S&P 500 prices.";
 
         return RedirectToAction("Index", "Dashboard");
     }

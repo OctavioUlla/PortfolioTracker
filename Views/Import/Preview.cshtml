@@ -162,14 +162,18 @@
                 <tr>
                     <th>Month</th>
                     <th>Balance</th>
+                    <th>S&amp;P 500 Price</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach (var b in Model.MonthlyBalances.OrderBy(x => x.Year).ThenBy(x => x.Month))
                 {
+                    var monthPrice = Model.SP500MonthlyPrices
+                        .FirstOrDefault(p => p.Year == b.Year && p.Month == b.Month);
                     <tr>
                         <td>@b.MonthName</td>
                         <td class="fw-semibold">@b.Balance.ToString("C2")</td>
+                        <td>@(monthPrice != null ? monthPrice.Price.ToString("C2") : "—")</td>
                     </tr>
                 }
             </tbody>

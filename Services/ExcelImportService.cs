@@ -56,6 +56,24 @@ public class ExcelImportService
                     Balance = balance,
                     BrokerId = brokerId
                 });
+
+                // One price per month: a file can carry several month-end rows for the same
+                // month, and the price is market data shared by every broker.
+                if (TryGetDecimal(oCell, out decimal monthSP500Price) && monthSP500Price > 0
+                    && !result.SP500MonthlyPrices.Any(p => p.Year == balanceDate.Year && p.Month == balanceDate.Month))
+                {
+                    result.SP500MonthlyPrices.Add(new SP500MonthlyPrice
+                    {
+                        Year = balanceDate.Year,
+                        Month = balanceDate.Month,
+                        Price = monthSP500Price
+                    });
+                }
+                else if (monthSP500Price <= 0)
+                {
+                    result.Warnings.Add($"Row {rowNum}: Missing S&P 500 price for {balanceDate:MMMM yyyy}; " +
+                        "the benchmark cannot be valued for that month until it is filled in.");
+                }
             }
             else
             {

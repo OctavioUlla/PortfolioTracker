@@ -42,6 +42,7 @@ public class MonthlyBalancesTests : PageTest
         await Expect(Page.GetByLabel("Year")).ToBeVisibleAsync();
         await Expect(Page.GetByLabel("Month")).ToBeVisibleAsync();
         await Expect(Page.GetByLabel("Balance ($)")).ToBeVisibleAsync();
+        await Expect(Page.GetByLabel("S&P 500 Price ($)")).ToBeVisibleAsync();
         await Expect(Page.GetByRole(AriaRole.Button, new() { Name = "Save Balance" })).ToBeVisibleAsync();
     }
 
@@ -53,6 +54,7 @@ public class MonthlyBalancesTests : PageTest
         formData.Set("Month", "6");
         formData.Set("Balance", "75000");
         formData.Set("BrokerId", "1");
+        formData.Set("SP500Price", "5000");
         await PostWithTokenAsync($"{BaseUrl}/MonthlyBalances/Create", formData);
 
         await Page.GotoAsync($"{BaseUrl}/MonthlyBalances");
@@ -68,6 +70,7 @@ public class MonthlyBalancesTests : PageTest
         formData.Set("Month", "12");
         formData.Set("Balance", "99999");
         formData.Set("BrokerId", "1");
+        formData.Set("SP500Price", "5000");
         await PostWithTokenAsync($"{BaseUrl}/MonthlyBalances/Create", formData);
 
         await Page.GotoAsync($"{BaseUrl}/MonthlyBalances");
@@ -94,6 +97,7 @@ public class MonthlyBalancesTests : PageTest
         formData.Set("Month", "3");
         formData.Set("Balance", "50000");
         formData.Set("BrokerId", "1");
+        formData.Set("SP500Price", "5000");
         await PostWithTokenAsync($"{BaseUrl}/MonthlyBalances/Create", formData);
 
         await Page.GotoAsync($"{BaseUrl}/MonthlyBalances");
@@ -115,5 +119,28 @@ public class MonthlyBalancesTests : PageTest
 
         await link.ClickAsync();
         await Expect(Page).ToHaveTitleAsync("Monthly Balances - Portfolio Tracker");
+    }
+
+    [Test]
+    public async Task MonthlyBalancesPage_RejectsBalanceWithoutSP500Price()
+    {
+        var formData = Page.APIRequest.CreateFormData();
+        formData.Set("Year", "2022");
+        formData.Set("Month", "7");
+        formData.Set("Balance", "12345");
+        formData.Set("BrokerId", "1");
+        // SP500Price deliberately omitted — it is required.
+        await PostWithTokenAsync($"{BaseUrl}/MonthlyBalances/Create", formData);
+
+        await Page.GotoAsync($"{BaseUrl}/MonthlyBalances");
+        await Expect(Page.GetByText("$12,345.00")).Not.ToBeVisibleAsync();
+    }
+
+    [Test]
+    public async Task MonthlyBalancesPage_Shows_SP500PriceColumn()
+    {
+        await Page.GotoAsync($"{BaseUrl}/MonthlyBalances");
+
+        await Expect(Page.GetByRole(AriaRole.Columnheader, new() { Name = "S&P 500" })).ToBeVisibleAsync();
     }
 }
