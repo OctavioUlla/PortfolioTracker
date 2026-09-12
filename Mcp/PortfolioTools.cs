@@ -584,4 +584,96 @@ public class PortfolioTools
         else
             existing.Price = price;
     }
+
+    // -------------------------------------------------------------------------
+    // Stock watch list
+    // -------------------------------------------------------------------------
+
+    [McpServerTool]
+    [Description("List the stocks on the watch list: tickers the portfolio owner is considering buying, with the price they want to buy each one at. These are not positions and carry no market price - the app has no market data feed.")]
+    public async Task<string> GetStockWatchList()
+    {
+        var items = await _db.StockWatchListItems.OrderBy(w => w.Ticker).ToListAsync();
+
+        var result = items.Select(w => new
+        {
+            w.Id,
+            w.Ticker,
+            w.Name,
+            w.TargetPrice,
+            w.Notes,
+            AddedDate = w.AddedDate.ToString("yyyy-MM-dd")
+        });
+
+        return JsonSerializer.Serialize(result, JsonOptions);
+    }
+
+    [McpServerTool]
+    [Description("Add a stock to the watch list, or update the one already there. The ticker identifies the entry, so calling this twice for the same ticker updates the existing target price rather than creating a duplicate.")]
+    public async Task<string> RegisterStockWatchItem(
+        [Description("Ticker symbol (e.g. AAPL). Case-insensitive.")] string ticker,
+        [Description("The price you would want to buy this stock at. Must be greater than 0.")] decimal targetPrice,
+        [Description("Optional company name (e.g. Apple Inc.).")] string? name = null,
+        [Description("Optional free-text notes on why you are watching it.")] string? notes = null)
+    {
+        if (string.IsNullOrWhiteSpace(ticker))
+            return "Error: ticker is required.";
+        if (targetPrice <= 0)
+            return "Error: targetPrice must be greater than 0.";
+
+        var normalized = StockWatchListItemFormViewModel.Normalize(ticker);
+        var existing = await _db.StockWatchListItems.FirstOrDefaultAsync(w => w.Ticker == normalized);
+        bool isUpdate = existing != null;
+        decimal oldTarget = existing?.TargetPrice ?? 0;
+
+        if (existing == null)
+        {
+            existing = new StockWatchListItem { Ticker = normalized, AddedDate = DateTime.Today };
+            _db.StockWatchListItems.Add(existing);
+        }
+
+        existing.TargetPrice = targetPrice;
+        // Only overwrite the optional fields when a value was supplied, so that updating a
+        // target price from an AI assistant does not silently wipe notes typed in the UI.
+        if (!string.IsNullOrWhiteSpace(name))
+            existing.Name = name.Trim();
+        if (!string.IsNullOrWhiteSpace(notes))
+            existing.Notes = notes.Trim();
+
+        await _db.SaveChangesAsync();
+
+        return JsonSerializer.Serialize(new
+        {
+            Success = true,
+            Action = isUpdate ? "updated" : "created",
+            Message = isUpdate
+                ? $"{normalized} target buy price updated from {oldTarget:C} to {targetPrice:C}."
+                : $"{normalized} added to the watch list with a target buy price of {targetPrice:C}.",
+            Ticker = normalized,
+            TargetPrice = targetPrice
+        }, JsonOptions);
+    }
+
+    [McpServerTool]
+    [Description("Remove a stock from the watch list by its ticker.")]
+    public async Task<string> RemoveStockWatchItem(
+        [Description("Ticker symbol to remove (e.g. AAPL). Case-insensitive.")] string ticker)
+    {
+        if (string.IsNullOrWhiteSpace(ticker))
+            return "Error: ticker is required.";
+
+        var normalized = StockWatchListItemFormViewModel.Normalize(ticker);
+        var existing = await _db.StockWatchListItems.FirstOrDefaultAsync(w => w.Ticker == normalized);
+        if (existing == null)
+            return $"Error: {normalized} is not on the watch list.";
+
+        _db.StockWatchListItems.Remove(existing);
+        await _db.SaveChangesAsync();
+
+        return JsonSerializer.Serialize(new
+        {
+            Success = true,
+            Message = $"{normalized} removed from the watch list."
+        }, JsonOptions);
+    }
 }

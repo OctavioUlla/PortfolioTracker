@@ -12,6 +12,7 @@ A web-based investment portfolio tracker built with **ASP.NET Core 8**. Track yo
 |---------|-------------|
 | 💰 **Deposits & Withdrawals** | Register cash flows with the S&P 500 price at the time of each transaction |
 | 📈 **Stock Trades** | Record buy/sell trades with ticker, quantity, price, and commission |
+| 👁️ **Stock Watch List** | Keep a shortlist of stocks you are considering buying, each with the price you would want to buy it at |
 | 🏦 **Monthly Balances** | Register end-of-month account balances per broker, together with that month's S&P 500 closing price (required) |
 | 📊 **Portfolio Chart** | Line chart comparing your portfolio value vs a virtual S&P 500 portfolio over time |
 | 📐 **IRR / XIRR Calculator** | Annualized rate of return for the lifetime, a specific year, or a custom date range |
@@ -50,7 +51,8 @@ The app will be available at `http://localhost:5285`. The SQLite database (`port
 2. Go to **Deposits & Withdrawals** to record your cash flows (include the S&P 500 price for strategy comparison).
 3. Go to **Monthly Balances** to record your end-of-month account values.
 4. Go to **Stock Trades** to log your individual buy/sell operations.
-5. Visit the **Dashboard** to see your portfolio chart, IRR, and S&P 500 comparison.
+5. Use **Stock Watch List** to note stocks you are considering and the price you'd buy them at.
+6. Visit the **Dashboard** to see your portfolio chart, IRR, and S&P 500 comparison.
 
 ---
 
@@ -58,7 +60,7 @@ The app will be available at `http://localhost:5285`. The SQLite database (`port
 
 ```
 PortfolioTracker/
-├── Controllers/          # MVC controllers (Dashboard, Transactions, StockTrades, MonthlyBalances, Brokers)
+├── Controllers/          # MVC controllers (Dashboard, Transactions, StockTrades, StockWatchList, MonthlyBalances, Brokers)
 ├── Data/                 # EF Core DbContext
 ├── Migrations/           # EF Core database migrations
 ├── Models/               # Domain models and view models
@@ -98,6 +100,9 @@ The MCP (Model Context Protocol) server is built directly into the main `Portfol
 | `GetLiquidityAccounts` | List cash accounts with current balances and recent movements |
 | `RegisterCashMovement` | Add a cash movement (positive = deposit, negative = withdrawal) |
 | `GetBrokers` | List all registered brokers |
+| `GetStockWatchList` | List the stocks on the watch list with their target buy prices |
+| `RegisterStockWatchItem` | Add a stock to the watch list, or update its target buy price (upserts by ticker) |
+| `RemoveStockWatchItem` | Remove a stock from the watch list by ticker |
 | `GetMonthlyBalances` | List monthly portfolio balance records with each month's S&P 500 price (filterable by broker and year) |
 | `RegisterMonthlyBalance` | Add or update a monthly balance plus that month's S&P 500 price, which is required (upserts by year/month/broker) |
 | `GetSP500MonthlyPrices` | List the recorded month-end S&P 500 prices (filterable by year) |
@@ -131,6 +136,7 @@ With the app running (default `http://localhost:5285`), configure Claude Desktop
 - *"Register a deposit of $5,000 on 2024-03-15 with S&P 500 price 5,150."*
 - *"Add a buy trade: 10 shares of AAPL at $175.50 on 2024-03-15."*
 - *"Register a cash movement of -$1,000 in my savings account."*
+- *"Add NVDA to my watch list with a target buy price of $120."*
 
 ---
 
