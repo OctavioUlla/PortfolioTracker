@@ -26,6 +26,10 @@ public static class SP500Calculator
     /// <summary>
     /// Value the simulated S&amp;P 500 portfolio: the same deposits and withdrawals as the
     /// real portfolio, converted to index units at the price recorded on each transaction.
+    /// Everything reported — units, invested, value, IRR — is measured as of the date of the
+    /// price used to value it, so transactions made after that date are excluded and
+    /// <see cref="SP500VirtualPortfolio.CurrentValue"/> always equals the last
+    /// <see cref="SP500VirtualPortfolio.History"/> point the dashboard chart plots.
     /// </summary>
     /// <param name="monthlyPrices">Recorded month-end S&amp;P 500 prices, used to value the
     /// benchmark on the same monthly grid the real portfolio is measured on.</param>
@@ -42,11 +46,12 @@ public static class SP500Calculator
         var ordered = transactions.OrderBy(t => t.Date).ToList();
 
         decimal units = 0;
-        decimal totalInvested = 0;
+        decimal invested = 0;
         decimal lastTransactionPrice = 0;
 
-        // Units held after each transaction, so the benchmark can be re-valued at any date.
-        var unitsOverTime = new List<(DateTime Date, decimal Units)>();
+        // Units and net invested after each transaction, so the benchmark can be re-valued at
+        // any date rather than only at the last one.
+        var positionOverTime = new List<(DateTime Date, decimal Units, decimal Invested)>();
 
         foreach (var t in ordered)
         {
@@ -55,14 +60,14 @@ public static class SP500Calculator
             if (t.Type == TransactionType.Deposit && t.SP500Price > 0)
             {
                 units += t.Amount / t.SP500Price;
-                totalInvested += t.Amount;
-                unitsOverTime.Add((t.Date, units));
+                invested += t.Amount;
+                positionOverTime.Add((t.Date, units, invested));
             }
             else if (t.Type == TransactionType.Withdrawal && units > 0 && t.SP500Price > 0)
             {
                 units -= Math.Min(units, t.Amount / t.SP500Price);
-                totalInvested -= t.Amount;
-                unitsOverTime.Add((t.Date, units));
+                invested -= t.Amount;
+                positionOverTime.Add((t.Date, units, invested));
             }
         }
 
@@ -75,7 +80,7 @@ public static class SP500Calculator
 
         foreach (var (monthEnd, price) in pricedMonths)
         {
-            var unitsThen = UnitsAt(unitsOverTime, monthEnd);
+            var (unitsThen, _) = PositionAt(positionOverTime, monthEnd);
             // Skip months before the first deposit: DashboardViewModel.SP500ChartData reads a
             // missing entry as a gap in the chart, and a zero-valued point would flatten the
             // line to 0 instead.
@@ -83,38 +88,48 @@ public static class SP500Calculator
                 portfolio.History.Add((monthEnd, unitsThen * price));
         }
 
+        // Pick the price and the date it belongs to together: valuing the units held today at
+        // an earlier month's price would put the card above the chart's last point (issue #60).
         // Prefer a price for the portfolio's own end month; fall back to the latest earlier
         // month, then to the last transaction price (the behaviour before month-end prices
         // were recorded).
         decimal terminalPrice;
-        if (endMonthEnd.HasValue)
+        DateTime? valuationDate;
+        if (pricedMonths.Count > 0)
         {
-            var exact = pricedMonths.LastOrDefault(p => p.MonthEnd == endMonthEnd.Value);
-            portfolio.HasMonthEndPrice = exact != default;
-            terminalPrice = exact != default
-                ? exact.Price
-                : pricedMonths.Count > 0 ? pricedMonths[^1].Price : lastTransactionPrice;
+            var chosen = endMonthEnd.HasValue
+                ? pricedMonths.LastOrDefault(p => p.MonthEnd == endMonthEnd.Value)
+                : default;
+            if (chosen == default) chosen = pricedMonths[^1];
+
+            terminalPrice = chosen.Price;
+            valuationDate = chosen.MonthEnd;
         }
         else
         {
-            terminalPrice = pricedMonths.Count > 0 ? pricedMonths[^1].Price : lastTransactionPrice;
+            terminalPrice = lastTransactionPrice;
+            valuationDate = ordered.LastOrDefault()?.Date;
         }
 
-        portfolio.TotalInvested = Math.Max(0, totalInvested);
-        portfolio.CurrentUnits = units;
-        portfolio.CurrentValue = units * terminalPrice;
+        portfolio.HasMonthEndPrice = endMonthEnd.HasValue && valuationDate == endMonthEnd.Value;
+
+        var (unitsAtValuation, investedAtValuation) = valuationDate.HasValue
+            ? PositionAt(positionOverTime, valuationDate.Value)
+            : (0m, 0m);
+
+        portfolio.TotalInvested = Math.Max(0, investedAtValuation);
+        portfolio.CurrentUnits = unitsAtValuation;
+        portfolio.CurrentValue = unitsAtValuation * terminalPrice;
         portfolio.TotalReturn = portfolio.CurrentValue - portfolio.TotalInvested;
         portfolio.TotalReturnPercent = portfolio.TotalInvested > 0
             ? (portfolio.TotalReturn / portfolio.TotalInvested) * 100
             : 0;
 
         // Same cash flows as the real portfolio's IRR, ending on the same date — that
-        // alignment is the whole point of recording a price per month.
-        var irrEndDate = endMonthEnd
-            ?? (pricedMonths.Count > 0 ? pricedMonths[^1].MonthEnd : (DateTime?)null)
-            ?? ordered.LastOrDefault()?.Date;
-        portfolio.Irr = irrEndDate.HasValue
-            ? IrrCalculator.CalculateWithEndValue(transactions, portfolio.CurrentValue, irrEndDate.Value)
+        // alignment is the whole point of recording a price per month. CalculateWithEndValue
+        // drops the flows dated after the end date for us.
+        portfolio.Irr = valuationDate.HasValue
+            ? IrrCalculator.CalculateWithEndValue(transactions, portfolio.CurrentValue, valuationDate.Value)
             : 0;
 
         return portfolio;
@@ -123,14 +138,17 @@ public static class SP500Calculator
     private static DateTime LastDayOfMonth(int year, int month) =>
         new DateTime(year, month, DateTime.DaysInMonth(year, month));
 
-    private static decimal UnitsAt(List<(DateTime Date, decimal Units)> unitsOverTime, DateTime asOf)
+    private static (decimal Units, decimal Invested) PositionAt(
+        List<(DateTime Date, decimal Units, decimal Invested)> positionOverTime, DateTime asOf)
     {
         decimal units = 0;
-        foreach (var point in unitsOverTime)
+        decimal invested = 0;
+        foreach (var point in positionOverTime)
         {
             if (point.Date > asOf) break;
             units = point.Units;
+            invested = point.Invested;
         }
-        return units;
+        return (units, invested);
     }
 }

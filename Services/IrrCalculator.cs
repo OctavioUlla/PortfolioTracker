@@ -57,7 +57,9 @@ public static class IrrCalculator
         if (startingBalance > 0 && periodStart.HasValue)
             cashFlows.Add((periodStart.Value, -(double)startingBalance));
 
-        foreach (var t in transactions.OrderBy(t => t.Date))
+        // Money paid in after the end value was measured is not part of what earned that
+        // value; including it understates the rate (and the end value cannot reflect it).
+        foreach (var t in transactions.Where(t => t.Date <= endDate).OrderBy(t => t.Date))
         {
             if (t.Type == TransactionType.Deposit)
                 cashFlows.Add((t.Date, -(double)t.Amount));
