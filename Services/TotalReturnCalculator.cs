@@ -40,9 +40,16 @@ public static class TotalReturnCalculator
 
         if (latestMonth == null) return (0, 0);
 
+        var endDate = new DateTime(latestMonth.Key.Year, latestMonth.Key.Month,
+            DateTime.DaysInMonth(latestMonth.Key.Year, latestMonth.Key.Month));
+
         var endValue = latestMonth.Sum(b => b.Balance);
-        var netDeposits = transactions.Sum(t =>
-            t.Type == TransactionType.Deposit ? t.Amount : -t.Amount);
+        // Only what was paid in by the time the end value was measured: a deposit made after
+        // that month end is not yet reflected in the balance, so counting it would show a
+        // phantom loss of exactly that amount.
+        var netDeposits = transactions
+            .Where(t => t.Date <= endDate)
+            .Sum(t => t.Type == TransactionType.Deposit ? t.Amount : -t.Amount);
         var invested = startingBalance + netDeposits;
 
         return (endValue, invested);

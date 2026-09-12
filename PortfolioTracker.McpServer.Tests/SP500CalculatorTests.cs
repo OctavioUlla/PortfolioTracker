@@ -134,6 +134,118 @@ public class SP500CalculatorTests
     }
 
     [Test]
+    public void Calculate_TransactionAfterTheEndMonth_IsNotValuedAtTheEndMonthPrice()
+    {
+        // Issue #60: the card counted units bought after the end month but priced them at the
+        // end month, so it sat above the chart's last point by the value of those units.
+        var transactions = new List<CashTransaction>
+        {
+            Deposit("2024-01-31", 10000, 5000),
+            Deposit("2024-07-15", 3000, 6100)   // after the portfolio's own end month
+        };
+        var prices = new List<SP500MonthlyPrice> { Price(2024, 1, 5000), Price(2024, 6, 6000) };
+
+        var portfolio = SP500Calculator.Calculate(transactions, prices, new DateTime(2024, 6, 30));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(portfolio.CurrentUnits, Is.EqualTo(2));
+            Assert.That(portfolio.CurrentValue, Is.EqualTo(12000));
+            Assert.That(portfolio.TotalInvested, Is.EqualTo(10000));
+            Assert.That(portfolio.History[^1].Value, Is.EqualTo(portfolio.CurrentValue));
+        });
+    }
+
+    [Test]
+    public void Calculate_NoPriceForEndMonth_StillMatchesTheLastChartedPoint()
+    {
+        // The fallback price belongs to May, so the units must be read as of May too — a June
+        // deposit valued at the May price would again put the card above the chart.
+        var transactions = new List<CashTransaction>
+        {
+            Deposit("2024-01-31", 10000, 5000),
+            Deposit("2024-06-10", 2200, 5500)
+        };
+        var prices = new List<SP500MonthlyPrice> { Price(2024, 1, 5000), Price(2024, 5, 5500) };
+
+        var portfolio = SP500Calculator.Calculate(transactions, prices, new DateTime(2024, 6, 30));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(portfolio.CurrentValue, Is.EqualTo(11000));
+            Assert.That(portfolio.History[^1].Value, Is.EqualTo(portfolio.CurrentValue));
+            Assert.That(portfolio.HasMonthEndPrice, Is.False);
+        });
+    }
+
+    [Test]
+    public void Calculate_ChartsLastPlottedPoint_EqualsTheCardValue()
+    {
+        // The invariant the dashboard relies on: DashboardViewModel.SP500ChartData plots the
+        // last History entry on or before the latest balance month, and the stat card shows
+        // CurrentValue. They must be the same number.
+        var transactions = new List<CashTransaction>
+        {
+            Deposit("2024-01-31", 10000, 5000),
+            Deposit("2024-09-05", 4000, 6300)
+        };
+        var prices = new List<SP500MonthlyPrice>
+        {
+            Price(2024, 1, 5000), Price(2024, 6, 6000), Price(2024, 8, 6200)
+        };
+        var viewModel = new DashboardViewModel
+        {
+            MonthlyBalances = new List<MonthlyBalance>
+            {
+                Balance(2024, 6, 11500), Balance(2024, 7, 11800), Balance(2024, 8, 12400)
+            },
+            CashTransactions = transactions,
+            SP500VirtualPortfolio = SP500Calculator.Calculate(transactions, prices,
+                new DateTime(2024, 8, 31))
+        };
+
+        var plotted = viewModel.SP500ChartData.Split(',').Last();
+
+        Assert.That(plotted, Is.EqualTo(viewModel.SP500VirtualPortfolio.CurrentValue
+            .ToString("F2", System.Globalization.CultureInfo.InvariantCulture)));
+    }
+
+    [Test]
+    public void CalculateWithEndValue_TransactionAfterTheEndDate_IsIgnored()
+    {
+        var upToEndDate = new List<CashTransaction> { Deposit("2024-01-31", 10000, 5000) };
+        var withLaterDeposit = new List<CashTransaction>(upToEndDate)
+        {
+            Deposit("2025-03-01", 5000, 6500)
+        };
+        var endDate = new DateTime(2024, 12, 31);
+
+        var irr = IrrCalculator.CalculateWithEndValue(withLaterDeposit, 12000, endDate);
+
+        Assert.That(irr, Is.EqualTo(IrrCalculator.CalculateWithEndValue(upToEndDate, 12000, endDate)));
+        Assert.That(irr, Is.GreaterThan(0));
+    }
+
+    [Test]
+    public void TotalReturn_DepositAfterTheLatestBalanceMonth_IsNotCountedAsInvested()
+    {
+        // Otherwise the deposit shows up as an instant loss of its own size: the balance it
+        // was compared against was measured before the money arrived.
+        var transactions = new List<CashTransaction>
+        {
+            Deposit("2024-01-31", 10000, 5000),
+            Deposit("2024-09-05", 4000, 6300)
+        };
+        var balances = new List<MonthlyBalance> { Balance(2024, 8, 12000) };
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(TotalReturnCalculator.CalculateAmount(transactions, balances), Is.EqualTo(2000));
+            Assert.That(TotalReturnCalculator.Calculate(transactions, balances), Is.EqualTo(20));
+        });
+    }
+
+    [Test]
     public void CalculateWithEndValue_ZeroEndValue_ReturnsZero()
     {
         // Newton-Raphson clamps to -0.999 rather than throwing, so without an explicit
