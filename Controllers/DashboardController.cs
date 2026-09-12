@@ -34,21 +34,32 @@ public class DashboardController : Controller
             .Include(a => a.Movements)
             .ToListAsync();
 
+        var sp500MonthlyPrices = await _db.SP500MonthlyPrices
+            .OrderBy(p => p.Year).ThenBy(p => p.Month)
+            .ToListAsync();
+
+        // Last day of the latest month that has a balance: the date both the real and the
+        // simulated portfolio are measured at.
+        var latestBalanceMonth = monthlyBalances
+            .GroupBy(m => new { m.Year, m.Month })
+            .OrderByDescending(g => g.Key.Year).ThenByDescending(g => g.Key.Month)
+            .FirstOrDefault();
+        DateTime? endMonthEnd = latestBalanceMonth == null
+            ? null
+            : new DateTime(latestBalanceMonth.Key.Year, latestBalanceMonth.Key.Month,
+                DateTime.DaysInMonth(latestBalanceMonth.Key.Year, latestBalanceMonth.Key.Month));
+
         var viewModel = new DashboardViewModel
         {
             MonthlyBalances = monthlyBalances,
             CashTransactions = cashTransactions,
             StockHoldings = StockHoldingsCalculator.Calculate(stockTrades),
             LiquidityAccounts = liquidityAccounts,
-            TotalCurrentBalance = monthlyBalances
-                .GroupBy(m => new { m.Year, m.Month })
-                .OrderByDescending(g => g.Key.Year).ThenByDescending(g => g.Key.Month)
-                .FirstOrDefault()
-                ?.Sum(m => m.Balance) ?? 0,
+            TotalCurrentBalance = latestBalanceMonth?.Sum(m => m.Balance) ?? 0,
             LifetimeIRR = IrrCalculator.Calculate(cashTransactions, monthlyBalances),
             LifetimeTotalReturn = TotalReturnCalculator.Calculate(cashTransactions, monthlyBalances),
             LifetimeTotalReturnAmount = TotalReturnCalculator.CalculateAmount(cashTransactions, monthlyBalances),
-            SP500VirtualPortfolio = SP500Calculator.Calculate(cashTransactions),
+            SP500VirtualPortfolio = SP500Calculator.Calculate(cashTransactions, sp500MonthlyPrices, endMonthEnd),
         };
 
         return View(viewModel);

@@ -48,9 +48,19 @@
                 <div>
                     <div class="stat-card-label">S&amp;P 500 Virtual Value</div>
                     <div class="stat-card-value">@sp500.CurrentValue.ToString("C0")</div>
-                    <div class="stat-card-sub @(sp500.TotalReturnPercent >= 0 ? "positive" : "negative")">
-                        @(sp500.TotalReturnPercent >= 0 ? "+" : "")@sp500.TotalReturnPercent.ToString("F1")% total return
+                    <div class="stat-card-sub">
+                        <span class="@(sp500.Irr >= 0 ? "positive" : "negative")">
+                            @sp500.Irr.ToString("F2")% IRR
+                        </span>
+                        &middot;
+                        <span class="@(sp500.TotalReturnPercent >= 0 ? "positive" : "negative")">
+                            @(sp500.TotalReturnPercent >= 0 ? "+" : "")@sp500.TotalReturnPercent.ToString("F1")% total return
+                        </span>
                     </div>
+                    @if (hasData && !sp500.HasMonthEndPrice)
+                    {
+                        <div class="stat-card-sub text-muted">No S&amp;P 500 price for the latest month</div>
+                    }
                 </div>
                 <div class="stat-card-icon" style="background:#fef3c7;">
                     <i class="fas fa-chart-bar" style="color:#b45309;"></i>

@@ -27,6 +27,16 @@ public class DashboardTests : PageTest
     }
 
     [Test]
+    public async Task DashboardPage_SP500Card_Shows_VirtualIrr()
+    {
+        await Page.GotoAsync($"{BaseUrl}/");
+
+        var card = Page.Locator(".stat-card", new() { HasText = "S&P 500 Virtual Value" });
+        await Expect(card.GetByText("% IRR")).ToBeVisibleAsync();
+        await Expect(card.GetByText("total return")).ToBeVisibleAsync();
+    }
+
+    [Test]
     public async Task DashboardPage_Shows_StockHoldingsSection()
     {
         await Page.GotoAsync($"{BaseUrl}/");

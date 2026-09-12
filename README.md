@@ -12,10 +12,10 @@ A web-based investment portfolio tracker built with **ASP.NET Core 8**. Track yo
 |---------|-------------|
 | 💰 **Deposits & Withdrawals** | Register cash flows with the S&P 500 price at the time of each transaction |
 | 📈 **Stock Trades** | Record buy/sell trades with ticker, quantity, price, and commission |
-| 🏦 **Monthly Balances** | Register end-of-month account balances per broker |
+| 🏦 **Monthly Balances** | Register end-of-month account balances per broker, together with that month's S&P 500 closing price (required) |
 | 📊 **Portfolio Chart** | Line chart comparing your portfolio value vs a virtual S&P 500 portfolio over time |
 | 📐 **IRR / XIRR Calculator** | Annualized rate of return for the lifetime, a specific year, or a custom date range |
-| 🆚 **S&P 500 Comparison** | A virtual portfolio that automatically buys/sells S&P 500 units on every deposit/withdrawal |
+| 🆚 **S&P 500 Comparison** | A virtual portfolio that automatically buys/sells S&P 500 units on every deposit/withdrawal, valued at the recorded month-end price so its **IRR** is measured at the same date as the real portfolio's |
 | 🏢 **Multiple Brokers** | All data is broker-scoped; totals are aggregated on the dashboard |
 
 ---
@@ -88,7 +88,7 @@ The MCP (Model Context Protocol) server is built directly into the main `Portfol
 
 | Tool | Description |
 |------|-------------|
-| `GetPortfolioSummary` | Current value, lifetime IRR, total return (% & amount), net deposits, total cash, and stock holdings |
+| `GetPortfolioSummary` | Current value, lifetime IRR, total return (% & amount), net deposits, total cash, the simulated S&P 500 value and IRR, and stock holdings |
 | `GetStockHoldings` | Current positions with FIFO cost basis and average holding period |
 | `GetTransactions` | List deposits/withdrawals (filterable by type and broker) |
 | `RegisterDeposit` | Add a deposit (include the S&P 500 price for benchmark comparison) |
@@ -98,8 +98,10 @@ The MCP (Model Context Protocol) server is built directly into the main `Portfol
 | `GetLiquidityAccounts` | List cash accounts with current balances and recent movements |
 | `RegisterCashMovement` | Add a cash movement (positive = deposit, negative = withdrawal) |
 | `GetBrokers` | List all registered brokers |
-| `GetMonthlyBalances` | List monthly portfolio balance records (filterable by broker and year) |
-| `RegisterMonthlyBalance` | Add or update a monthly balance (upserts by year/month/broker) |
+| `GetMonthlyBalances` | List monthly portfolio balance records with each month's S&P 500 price (filterable by broker and year) |
+| `RegisterMonthlyBalance` | Add or update a monthly balance plus that month's S&P 500 price, which is required (upserts by year/month/broker) |
+| `GetSP500MonthlyPrices` | List the recorded month-end S&P 500 prices (filterable by year) |
+| `RegisterSP500MonthlyPrice` | Add or update a month's S&P 500 price on its own, without touching a balance |
 
 ### Claude Desktop Setup
 

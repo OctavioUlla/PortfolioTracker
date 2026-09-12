@@ -21,7 +21,7 @@ public class PortfolioTools
     // -------------------------------------------------------------------------
 
     [McpServerTool]
-    [Description("Get a comprehensive portfolio summary: current portfolio value, lifetime IRR, total return (% and amount), net deposits, total cash in liquidity accounts, and a breakdown of current stock holdings.")]
+    [Description("Get a comprehensive portfolio summary: current portfolio value, lifetime IRR, total return (% and amount), net deposits, total cash in liquidity accounts, the simulated S&P 500 benchmark (value and IRR measured at the same date), and a breakdown of current stock holdings.")]
     public async Task<string> GetPortfolioSummary()
     {
         var monthlyBalances = await _db.MonthlyBalances.OrderBy(m => m.Year).ThenBy(m => m.Month).ToListAsync();
@@ -29,10 +29,18 @@ public class PortfolioTools
         var stockTrades = await _db.StockTrades.OrderBy(t => t.Date).ToListAsync();
         var liquidityAccounts = await _db.LiquidityAccounts.Include(a => a.Movements).ToListAsync();
 
-        var currentBalance = monthlyBalances
+        var sp500MonthlyPrices = await _db.SP500MonthlyPrices.OrderBy(p => p.Year).ThenBy(p => p.Month).ToListAsync();
+
+        var latestBalanceMonth = monthlyBalances
             .GroupBy(m => new { m.Year, m.Month })
             .OrderByDescending(g => g.Key.Year).ThenByDescending(g => g.Key.Month)
-            .FirstOrDefault()?.Sum(m => m.Balance) ?? 0;
+            .FirstOrDefault();
+        var currentBalance = latestBalanceMonth?.Sum(m => m.Balance) ?? 0;
+        DateTime? endMonthEnd = latestBalanceMonth == null
+            ? null
+            : new DateTime(latestBalanceMonth.Key.Year, latestBalanceMonth.Key.Month,
+                DateTime.DaysInMonth(latestBalanceMonth.Key.Year, latestBalanceMonth.Key.Month));
+        var sp500 = SP500Calculator.Calculate(cashTransactions, sp500MonthlyPrices, endMonthEnd);
 
         var totalCash = liquidityAccounts.Sum(a => a.Movements.Sum(m => m.Amount));
         var holdings = StockHoldingsCalculator.Calculate(stockTrades);
@@ -50,6 +58,10 @@ public class PortfolioTools
             LifetimeIRR_Percent = irr,
             TotalReturn_Percent = totalReturn,
             TotalReturn_Amount = totalReturnAmount,
+            SP500Virtual_Value = sp500.CurrentValue,
+            SP500Virtual_IRR_Percent = sp500.Irr,
+            SP500Virtual_TotalReturn_Percent = sp500.TotalReturnPercent,
+            SP500Virtual_PricedAtEndMonth = sp500.HasMonthEndPrice,
             ActiveStockPositions = holdings.Count,
             StockHoldings = holdings.Select(h => new
             {
@@ -422,6 +434,8 @@ public class PortfolioTools
             .OrderBy(m => m.Year).ThenBy(m => m.Month)
             .ToListAsync();
 
+        var prices = await _db.SP500MonthlyPrices.ToListAsync();
+
         var result = balances.Select(m => new
         {
             m.Id,
@@ -429,6 +443,7 @@ public class PortfolioTools
             m.Month,
             MonthName = m.MonthName,
             m.Balance,
+            SP500Price = prices.FirstOrDefault(p => p.Year == m.Year && p.Month == m.Month)?.Price,
             m.BrokerId,
             BrokerName = m.Broker?.Name
         });
@@ -437,12 +452,13 @@ public class PortfolioTools
     }
 
     [McpServerTool]
-    [Description("Register or update a monthly portfolio balance for a specific broker. If a record already exists for that year/month/broker combination it will be updated; otherwise a new record is created.")]
+    [Description("Register or update a monthly portfolio balance for a specific broker, together with the S&P 500 closing price for that month (required, so the simulated S&P 500 portfolio can be valued at the same date as the real one). If a record already exists for that year/month/broker combination it will be updated; otherwise a new record is created. The S&P 500 price is stored once per month and shared by every broker.")]
     public async Task<string> RegisterMonthlyBalance(
         [Description("Year (e.g. 2024).")] int year,
         [Description("Month number (1-12).")] int month,
         [Description("Portfolio balance at the end of the month.")] decimal balance,
-        [Description("Broker ID (use get_brokers to list available brokers; default broker ID is 1).")] int brokerId = 1)
+        [Description("S&P 500 closing price for that month. Required and must be greater than 0.")] decimal sp500Price,
+        [Description("Broker ID (use get_brokers to list available brokers; the seeded default broker has ID 1).")] int brokerId)
     {
         if (year < 1900 || year > 2100)
             return "Error: year must be between 1900 and 2100.";
@@ -450,6 +466,8 @@ public class PortfolioTools
             return "Error: month must be between 1 and 12.";
         if (balance < 0)
             return "Error: balance cannot be negative.";
+        if (sp500Price <= 0)
+            return "Error: sp500Price is required and must be greater than 0.";
         if (!await _db.Brokers.AnyAsync(b => b.Id == brokerId))
             return $"Error: broker with ID {brokerId} not found. Use get_brokers to list available brokers.";
 
@@ -475,6 +493,7 @@ public class PortfolioTools
             _db.MonthlyBalances.Add(existing);
         }
 
+        await UpsertSP500PriceAsync(year, month, sp500Price);
         await _db.SaveChangesAsync();
 
         return JsonSerializer.Serialize(new
@@ -482,9 +501,87 @@ public class PortfolioTools
             Success = true,
             Action = isUpdate ? "updated" : "created",
             Message = isUpdate
-                ? $"Monthly balance for {new DateTime(year, month, 1):MMMM yyyy} updated from {oldBalance:C} to {balance:C}."
-                : $"Monthly balance of {balance:C} registered for {new DateTime(year, month, 1):MMMM yyyy}.",
-            BalanceId = existing.Id
+                ? $"Monthly balance for {new DateTime(year, month, 1):MMMM yyyy} updated from {oldBalance:C} to {balance:C}, S&P 500 price set to {sp500Price:C}."
+                : $"Monthly balance of {balance:C} registered for {new DateTime(year, month, 1):MMMM yyyy} with an S&P 500 price of {sp500Price:C}.",
+            BalanceId = existing.Id,
+            SP500Price = sp500Price
         }, JsonOptions);
+    }
+
+    // -------------------------------------------------------------------------
+    // Monthly S&P 500 prices
+    // -------------------------------------------------------------------------
+
+    [McpServerTool]
+    [Description("List the recorded monthly S&P 500 closing prices used to value the simulated S&P 500 portfolio. Optionally filter by year.")]
+    public async Task<string> GetSP500MonthlyPrices(
+        [Description("Optional year to filter by (e.g. 2024).")] int? year = null)
+    {
+        var query = _db.SP500MonthlyPrices.AsQueryable();
+
+        if (year.HasValue)
+            query = query.Where(p => p.Year == year.Value);
+
+        var prices = await query
+            .OrderBy(p => p.Year).ThenBy(p => p.Month)
+            .ToListAsync();
+
+        var result = prices.Select(p => new
+        {
+            p.Id,
+            p.Year,
+            p.Month,
+            MonthName = p.MonthName,
+            p.Price
+        });
+
+        return JsonSerializer.Serialize(result, JsonOptions);
+    }
+
+    [McpServerTool]
+    [Description("Register or update the S&P 500 closing price for a month, without touching any balance. Use this to correct a price, or to fill in a month whose balance was recorded before month-end prices were tracked.")]
+    public async Task<string> RegisterSP500MonthlyPrice(
+        [Description("Year (e.g. 2024).")] int year,
+        [Description("Month number (1-12).")] int month,
+        [Description("S&P 500 closing price for that month. Must be greater than 0.")] decimal price)
+    {
+        if (year < 1900 || year > 2100)
+            return "Error: year must be between 1900 and 2100.";
+        if (month < 1 || month > 12)
+            return "Error: month must be between 1 and 12.";
+        if (price <= 0)
+            return "Error: price must be greater than 0.";
+
+        var existing = await _db.SP500MonthlyPrices
+            .FirstOrDefaultAsync(p => p.Year == year && p.Month == month);
+        bool isUpdate = existing != null;
+        decimal oldPrice = existing?.Price ?? 0;
+
+        await UpsertSP500PriceAsync(year, month, price);
+        await _db.SaveChangesAsync();
+
+        return JsonSerializer.Serialize(new
+        {
+            Success = true,
+            Action = isUpdate ? "updated" : "created",
+            Message = isUpdate
+                ? $"S&P 500 price for {new DateTime(year, month, 1):MMMM yyyy} updated from {oldPrice:C} to {price:C}."
+                : $"S&P 500 price of {price:C} registered for {new DateTime(year, month, 1):MMMM yyyy}.",
+            Price = price
+        }, JsonOptions);
+    }
+
+    /// <summary>
+    /// The price is unique per (Year, Month) and shared by every broker's balance for that
+    /// month, so it is always written as an upsert rather than an insert.
+    /// </summary>
+    private async Task UpsertSP500PriceAsync(int year, int month, decimal price)
+    {
+        var existing = await _db.SP500MonthlyPrices
+            .FirstOrDefaultAsync(p => p.Year == year && p.Month == month);
+        if (existing == null)
+            _db.SP500MonthlyPrices.Add(new SP500MonthlyPrice { Year = year, Month = month, Price = price });
+        else
+            existing.Price = price;
     }
 }

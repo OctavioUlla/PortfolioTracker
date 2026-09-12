@@ -567,7 +567,7 @@ public class McpToolsTests
         using var db = CreateContext();
         var tools = new PortfolioTools(db);
 
-        var json = await tools.RegisterMonthlyBalance(2024, 3, 12000, 1);
+        var json = await tools.RegisterMonthlyBalance(2024, 3, 12000, 4800, 1);
 
         var root = JsonDocument.Parse(json).RootElement;
         Assert.That(root.GetProperty("Success").GetBoolean(), Is.True);
@@ -577,6 +577,9 @@ public class McpToolsTests
         Assert.That(saved!.Balance, Is.EqualTo(12000));
         Assert.That(saved.Year, Is.EqualTo(2024));
         Assert.That(saved.Month, Is.EqualTo(3));
+
+        var price = await db.SP500MonthlyPrices.FirstAsync(p => p.Year == 2024 && p.Month == 3);
+        Assert.That(price.Price, Is.EqualTo(4800));
     }
 
     [Test]
@@ -587,7 +590,7 @@ public class McpToolsTests
         await db.SaveChangesAsync();
 
         var tools = new PortfolioTools(db);
-        var json = await tools.RegisterMonthlyBalance(2024, 6, 11500, 1);
+        var json = await tools.RegisterMonthlyBalance(2024, 6, 11500, 5100, 1);
 
         var root = JsonDocument.Parse(json).RootElement;
         Assert.That(root.GetProperty("Success").GetBoolean(), Is.True);
@@ -595,6 +598,9 @@ public class McpToolsTests
 
         var balance = await db.MonthlyBalances.FirstAsync(m => m.Year == 2024 && m.Month == 6);
         Assert.That(balance.Balance, Is.EqualTo(11500));
+
+        var price = await db.SP500MonthlyPrices.FirstAsync(p => p.Year == 2024 && p.Month == 6);
+        Assert.That(price.Price, Is.EqualTo(5100));
     }
 
     [Test]
@@ -603,7 +609,7 @@ public class McpToolsTests
         using var db = CreateContext();
         var tools = new PortfolioTools(db);
 
-        var result = await tools.RegisterMonthlyBalance(2024, 13, 10000);
+        var result = await tools.RegisterMonthlyBalance(2024, 13, 10000, 4800, 1);
 
         Assert.That(result, Does.StartWith("Error:"));
     }
@@ -614,7 +620,7 @@ public class McpToolsTests
         using var db = CreateContext();
         var tools = new PortfolioTools(db);
 
-        var result = await tools.RegisterMonthlyBalance(2024, 1, -100);
+        var result = await tools.RegisterMonthlyBalance(2024, 1, -100, 4800, 1);
 
         Assert.That(result, Does.StartWith("Error:"));
     }
@@ -625,8 +631,117 @@ public class McpToolsTests
         using var db = CreateContext();
         var tools = new PortfolioTools(db);
 
-        var result = await tools.RegisterMonthlyBalance(2024, 1, 10000, brokerId: 999);
+        var result = await tools.RegisterMonthlyBalance(2024, 1, 10000, 4800, brokerId: 999);
 
         Assert.That(result, Does.StartWith("Error:"));
+    }
+
+    [Test]
+    public async Task RegisterMonthlyBalance_ZeroSP500Price_ReturnsError()
+    {
+        using var db = CreateContext();
+        var tools = new PortfolioTools(db);
+
+        var result = await tools.RegisterMonthlyBalance(2024, 1, 10000, 0, 1);
+
+        Assert.That(result, Does.StartWith("Error:"));
+        Assert.That(await db.MonthlyBalances.AnyAsync(), Is.False);
+    }
+
+    [Test]
+    public async Task RegisterMonthlyBalance_ExistingMonth_UpdatesSharedPriceOnce()
+    {
+        using var db = CreateContext();
+        db.Brokers.Add(new Broker { Id = 2, Name = "Second Broker" });
+        await db.SaveChangesAsync();
+
+        var tools = new PortfolioTools(db);
+        await tools.RegisterMonthlyBalance(2024, 5, 10000, 5200, 1);
+        await tools.RegisterMonthlyBalance(2024, 5, 4000, 5250, 2);
+
+        // One price row per month, shared by both brokers, holding the latest value written.
+        var prices = await db.SP500MonthlyPrices.Where(p => p.Year == 2024 && p.Month == 5).ToListAsync();
+        Assert.That(prices, Has.Count.EqualTo(1));
+        Assert.That(prices[0].Price, Is.EqualTo(5250));
+        Assert.That(await db.MonthlyBalances.CountAsync(m => m.Year == 2024 && m.Month == 5), Is.EqualTo(2));
+    }
+
+    [Test]
+    public async Task GetMonthlyBalances_IncludesMonthSP500Price()
+    {
+        using var db = CreateContext();
+        db.MonthlyBalances.Add(new MonthlyBalance { Year = 2024, Month = 4, Balance = 9000, BrokerId = 1 });
+        db.SP500MonthlyPrices.Add(new SP500MonthlyPrice { Year = 2024, Month = 4, Price = 5035.69m });
+        await db.SaveChangesAsync();
+
+        var tools = new PortfolioTools(db);
+        var json = await tools.GetMonthlyBalances();
+
+        var balance = JsonDocument.Parse(json).RootElement.EnumerateArray().Single();
+        Assert.That(balance.GetProperty("SP500Price").GetDecimal(), Is.EqualTo(5035.69m));
+    }
+
+    // -------------------------------------------------------------------------
+    // S&P 500 monthly prices
+    // -------------------------------------------------------------------------
+
+    [Test]
+    public async Task RegisterSP500MonthlyPrice_NewMonth_CreatesPrice()
+    {
+        using var db = CreateContext();
+        var tools = new PortfolioTools(db);
+
+        var json = await tools.RegisterSP500MonthlyPrice(2024, 7, 5522.30m);
+
+        var root = JsonDocument.Parse(json).RootElement;
+        Assert.That(root.GetProperty("Action").GetString(), Is.EqualTo("created"));
+
+        var price = await db.SP500MonthlyPrices.FirstAsync(p => p.Year == 2024 && p.Month == 7);
+        Assert.That(price.Price, Is.EqualTo(5522.30m));
+    }
+
+    [Test]
+    public async Task RegisterSP500MonthlyPrice_ExistingMonth_UpdatesInPlace()
+    {
+        using var db = CreateContext();
+        db.SP500MonthlyPrices.Add(new SP500MonthlyPrice { Year = 2024, Month = 7, Price = 5000 });
+        await db.SaveChangesAsync();
+
+        var tools = new PortfolioTools(db);
+        var json = await tools.RegisterSP500MonthlyPrice(2024, 7, 5522.30m);
+
+        Assert.That(JsonDocument.Parse(json).RootElement.GetProperty("Action").GetString(), Is.EqualTo("updated"));
+        Assert.That(await db.SP500MonthlyPrices.CountAsync(), Is.EqualTo(1));
+        Assert.That((await db.SP500MonthlyPrices.FirstAsync()).Price, Is.EqualTo(5522.30m));
+    }
+
+    [Test]
+    public async Task RegisterSP500MonthlyPrice_ZeroPrice_ReturnsError()
+    {
+        using var db = CreateContext();
+        var tools = new PortfolioTools(db);
+
+        var result = await tools.RegisterSP500MonthlyPrice(2024, 7, 0);
+
+        Assert.That(result, Does.StartWith("Error:"));
+    }
+
+    [Test]
+    public async Task GetSP500MonthlyPrices_FilterByYear_ReturnsOnlyMatchingYear()
+    {
+        using var db = CreateContext();
+        db.SP500MonthlyPrices.AddRange(
+            new SP500MonthlyPrice { Year = 2023, Month = 12, Price = 4769.83m },
+            new SP500MonthlyPrice { Year = 2024, Month = 1, Price = 4845.65m },
+            new SP500MonthlyPrice { Year = 2024, Month = 2, Price = 5096.27m }
+        );
+        await db.SaveChangesAsync();
+
+        var tools = new PortfolioTools(db);
+        var json = await tools.GetSP500MonthlyPrices(year: 2024);
+
+        var prices = JsonDocument.Parse(json).RootElement.EnumerateArray().ToList();
+        Assert.That(prices, Has.Count.EqualTo(2));
+        Assert.That(prices.All(p => p.GetProperty("Year").GetInt32() == 2024), Is.True);
     }
 }
