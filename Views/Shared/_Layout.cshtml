@@ -478,6 +478,13 @@
             </a>
         </li>
         <li class="sidebar-nav-item">
+            <a class="sidebar-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "StockWatchList" ? "active" : "")"
+               asp-controller="StockWatchList" asp-action="Index">
+                <span class="nav-icon"><i class="fas fa-eye"></i></span>
+                Stock Watch List
+            </a>
+        </li>
+        <li class="sidebar-nav-item">
             <a class="sidebar-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "MonthlyBalances" ? "active" : "")"
                asp-controller="MonthlyBalances" asp-action="Index">
                 <span class="nav-icon"><i class="fas fa-calendar-check"></i></span>

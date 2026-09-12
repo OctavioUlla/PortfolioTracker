@@ -15,6 +15,7 @@ public class AppDbContext : DbContext
     public DbSet<LiquidityAccount> LiquidityAccounts { get; set; }
     public DbSet<LiquidityMovement> LiquidityMovements { get; set; }
     public DbSet<Goal> Goals { get; set; }
+    public DbSet<StockWatchListItem> StockWatchListItems { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -42,5 +43,9 @@ public class AppDbContext : DbContext
             .Property(t => t.Amount).HasColumnType("decimal(18,2)");
         modelBuilder.Entity<Goal>()
             .Property(g => g.TargetValue).HasColumnType("decimal(18,2)");
+        modelBuilder.Entity<StockWatchListItem>()
+            .Property(w => w.TargetPrice).HasColumnType("decimal(18,2)");
+        modelBuilder.Entity<StockWatchListItem>()
+            .HasIndex(w => w.Ticker).IsUnique();
     }
 }

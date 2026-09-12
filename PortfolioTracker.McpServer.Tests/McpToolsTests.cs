@@ -744,4 +744,137 @@ public class McpToolsTests
         Assert.That(prices, Has.Count.EqualTo(2));
         Assert.That(prices.All(p => p.GetProperty("Year").GetInt32() == 2024), Is.True);
     }
+
+    // -------------------------------------------------------------------------
+    // Stock watch list
+    // -------------------------------------------------------------------------
+
+    [Test]
+    public async Task RegisterStockWatchItem_NewTicker_CreatesItem()
+    {
+        using var db = CreateContext();
+        var tools = new PortfolioTools(db);
+
+        var json = await tools.RegisterStockWatchItem("AAPL", 150.00m, "Apple Inc.", "Waiting for a pullback");
+
+        var root = JsonDocument.Parse(json).RootElement;
+        Assert.That(root.GetProperty("Success").GetBoolean(), Is.True);
+        Assert.That(root.GetProperty("Action").GetString(), Is.EqualTo("created"));
+
+        var item = await db.StockWatchListItems.FirstAsync(w => w.Ticker == "AAPL");
+        Assert.Multiple(() =>
+        {
+            Assert.That(item.TargetPrice, Is.EqualTo(150.00m));
+            Assert.That(item.Name, Is.EqualTo("Apple Inc."));
+            Assert.That(item.Notes, Is.EqualTo("Waiting for a pullback"));
+        });
+    }
+
+    [Test]
+    public async Task RegisterStockWatchItem_ExistingTicker_UpdatesTargetInPlace()
+    {
+        using var db = CreateContext();
+        var tools = new PortfolioTools(db);
+        await tools.RegisterStockWatchItem("AAPL", 150.00m, "Apple Inc.", "Waiting for a pullback");
+
+        var json = await tools.RegisterStockWatchItem("AAPL", 140.00m);
+
+        var root = JsonDocument.Parse(json).RootElement;
+        Assert.That(root.GetProperty("Action").GetString(), Is.EqualTo("updated"));
+        Assert.That(await db.StockWatchListItems.CountAsync(), Is.EqualTo(1));
+
+        var item = await db.StockWatchListItems.FirstAsync(w => w.Ticker == "AAPL");
+        Assert.Multiple(() =>
+        {
+            Assert.That(item.TargetPrice, Is.EqualTo(140.00m));
+            // The omitted optional fields keep whatever was already there.
+            Assert.That(item.Name, Is.EqualTo("Apple Inc."));
+            Assert.That(item.Notes, Is.EqualTo("Waiting for a pullback"));
+        });
+    }
+
+    [Test]
+    public async Task RegisterStockWatchItem_LowercaseTicker_IsNormalizedToUpperCase()
+    {
+        using var db = CreateContext();
+        var tools = new PortfolioTools(db);
+
+        await tools.RegisterStockWatchItem(" msft ", 300m);
+        await tools.RegisterStockWatchItem("MSFT", 290m);
+
+        Assert.That(await db.StockWatchListItems.CountAsync(), Is.EqualTo(1));
+        var item = await db.StockWatchListItems.FirstAsync();
+        Assert.Multiple(() =>
+        {
+            Assert.That(item.Ticker, Is.EqualTo("MSFT"));
+            Assert.That(item.TargetPrice, Is.EqualTo(290m));
+        });
+    }
+
+    [Test]
+    public async Task RegisterStockWatchItem_ZeroTargetPrice_ReturnsError()
+    {
+        using var db = CreateContext();
+        var tools = new PortfolioTools(db);
+
+        var result = await tools.RegisterStockWatchItem("AAPL", 0m);
+
+        Assert.That(result, Does.StartWith("Error:"));
+        Assert.That(await db.StockWatchListItems.CountAsync(), Is.EqualTo(0));
+    }
+
+    [Test]
+    public async Task RegisterStockWatchItem_BlankTicker_ReturnsError()
+    {
+        using var db = CreateContext();
+        var tools = new PortfolioTools(db);
+
+        var result = await tools.RegisterStockWatchItem("   ", 150m);
+
+        Assert.That(result, Does.StartWith("Error:"));
+    }
+
+    [Test]
+    public async Task GetStockWatchList_ReturnsItemsOrderedByTicker()
+    {
+        using var db = CreateContext();
+        var tools = new PortfolioTools(db);
+        await tools.RegisterStockWatchItem("MSFT", 300m);
+        await tools.RegisterStockWatchItem("AAPL", 150m, "Apple Inc.");
+
+        var json = await tools.GetStockWatchList();
+
+        var items = JsonDocument.Parse(json).RootElement.EnumerateArray().ToList();
+        Assert.That(items, Has.Count.EqualTo(2));
+        Assert.Multiple(() =>
+        {
+            Assert.That(items[0].GetProperty("Ticker").GetString(), Is.EqualTo("AAPL"));
+            Assert.That(items[0].GetProperty("TargetPrice").GetDecimal(), Is.EqualTo(150m));
+            Assert.That(items[1].GetProperty("Ticker").GetString(), Is.EqualTo("MSFT"));
+        });
+    }
+
+    [Test]
+    public async Task RemoveStockWatchItem_ExistingTicker_RemovesItem()
+    {
+        using var db = CreateContext();
+        var tools = new PortfolioTools(db);
+        await tools.RegisterStockWatchItem("AAPL", 150m);
+
+        var json = await tools.RemoveStockWatchItem("aapl");
+
+        Assert.That(JsonDocument.Parse(json).RootElement.GetProperty("Success").GetBoolean(), Is.True);
+        Assert.That(await db.StockWatchListItems.CountAsync(), Is.EqualTo(0));
+    }
+
+    [Test]
+    public async Task RemoveStockWatchItem_UnknownTicker_ReturnsError()
+    {
+        using var db = CreateContext();
+        var tools = new PortfolioTools(db);
+
+        var result = await tools.RemoveStockWatchItem("NFLX");
+
+        Assert.That(result, Does.StartWith("Error:"));
+    }
 }

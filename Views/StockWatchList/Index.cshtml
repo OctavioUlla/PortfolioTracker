@@ -1,0 +1,112 @@
+@model PortfolioTracker.Models.StockWatchListViewModel
+@{
+    ViewData["Title"] = "Stock Watch List";
+}
+
+<div class="row g-3">
+    <div class="col-lg-4">
+        <div class="chart-card">
+            <h6 class="chart-card-title">Add to Watch List</h6>
+            <p class="text-muted" style="font-size:0.8rem;">
+                Stocks you are considering buying, and the price you would want to buy them at.
+            </p>
+            <form asp-action="Create" method="post">
+                <div asp-validation-summary="ModelOnly" class="text-danger" style="font-size:0.8rem;"></div>
+                <div class="mb-2">
+                    <label class="form-label" asp-for="Form.Ticker">Ticker</label>
+                    <input class="form-control" asp-for="Form.Ticker"
+                           placeholder="e.g. AAPL" maxlength="10" required />
+                    <span asp-validation-for="Form.Ticker" class="text-danger" style="font-size:0.75rem;"></span>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label" asp-for="Form.Name">Company Name <span class="text-muted fw-normal">(optional)</span></label>
+                    <input class="form-control" asp-for="Form.Name" placeholder="e.g. Apple Inc." maxlength="100" />
+                    <span asp-validation-for="Form.Name" class="text-danger" style="font-size:0.75rem;"></span>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label" asp-for="Form.TargetPrice">Target Buy Price ($)</label>
+                    <input type="number" class="form-control" asp-for="Form.TargetPrice"
+                           step="0.01" min="0.01" placeholder="150.00" required />
+                    <span asp-validation-for="Form.TargetPrice" class="text-danger" style="font-size:0.75rem;"></span>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" asp-for="Form.Notes">Notes <span class="text-muted fw-normal">(optional)</span></label>
+                    <textarea class="form-control" asp-for="Form.Notes" rows="3" maxlength="500"
+                              placeholder="Why you are watching it"></textarea>
+                    <span asp-validation-for="Form.Notes" class="text-danger" style="font-size:0.75rem;"></span>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-plus me-2"></i>Add to Watch List
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="data-table">
+            <div class="data-table-header">
+                <span class="data-table-title">Watch List</span>
+                <span class="text-muted" style="font-size:0.8rem;">@Model.Items.Count total</span>
+            </div>
+            @if (Model.Items.Any())
+            {
+                <table class="table" data-sortable>
+                    <thead>
+                        <tr>
+                            <th>Ticker</th>
+                            <th>Company</th>
+                            <th>Target Buy Price</th>
+                            <th>Notes</th>
+                            <th>Added</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.Items)
+                        {
+                            <tr>
+                                <td class="fw-semibold">
+                                    <i class="fas fa-eye text-muted me-2"></i>@item.Ticker
+                                </td>
+                                <td>@(item.Name ?? "—")</td>
+                                <td data-sort-value="@item.TargetPrice.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)">
+                                    <form asp-action="UpdateTarget" method="post" class="d-flex align-items-center gap-1">
+                                        <input type="hidden" name="id" value="@item.Id" />
+                                        <input type="number" name="targetPrice" class="form-control form-control-sm"
+                                               style="max-width:110px;" step="0.01" min="0.01" required
+                                               value="@item.TargetPrice.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)" />
+                                        <button type="submit" class="btn btn-secondary btn-sm" title="Save target">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                                <td class="text-muted" style="max-width:260px;">@(item.Notes ?? "—")</td>
+                                <td data-sort-value="@item.AddedDate.ToString("yyyy-MM-dd")">@item.AddedDate.ToString("yyyy-MM-dd")</td>
+                                <td>
+                                    <form asp-action="Delete" method="post">
+                                        <input type="hidden" name="id" value="@item.Id" />
+                                        <button type="submit" class="btn btn-sm" style="background:#fee2e2;color:#b91c1c;border:none;"
+                                                title="Remove from watch list">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="text-center py-5 text-muted">
+                    <i class="fas fa-eye fa-3x mb-3 opacity-25"></i>
+                    <p>No stocks on your watch list yet. Add one to start tracking a buy target.</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
